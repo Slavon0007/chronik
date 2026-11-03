@@ -41,23 +41,25 @@ function categoryOf(value: string): CategoryId {
  * Supabase environment variables are configured.
  */
 export async function fetchPublishedEvents(): Promise<ChronikEvent[]> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return []
+  const useDatabase = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY)
 
   const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/active_events?select=id,title,category,start_date,end_date,opening_hours,venue,address,zip,city,lat,lng,description,organizer,website,price,source_url,source_name,confidence,attendance_conditions,location_precision&order=start_date.asc&limit=1000`,
+    useDatabase ? `${SUPABASE_URL}/rest/v1/active_events?select=id,title,category,start_date,end_date,opening_hours,venue,address,zip,city,lat,lng,description,organizer,website,price,source_url,source_name,confidence,attendance_conditions,location_precision&order=start_date.asc&limit=1000` : new URL('events.json', document.baseURI).href,
     {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
+      headers: useDatabase ? {
+        apikey: SUPABASE_ANON_KEY || '',
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         Accept: 'application/json',
-      },
+      } : {},
+      cache: 'no-store',
     },
   )
   if (!response.ok) {
-    throw new Error(`Supabase returned ${response.status}`)
+    throw new Error(`Event catalogue returned ${response.status}`)
   }
 
-  const rows = (await response.json()) as EventRow[]
+  const payload = await response.json()
+  const rows = (useDatabase ? payload : payload.events.map((row: EventRow & { dedupe_key: string }) => ({ ...row, id: row.dedupe_key }))) as EventRow[]
   return rows
     .filter((row) => row.lat !== null && row.lng !== null && row.lat !== undefined && row.lng !== undefined)
     .map((row) => {

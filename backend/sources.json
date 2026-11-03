@@ -12,16 +12,26 @@
       "category": "markt",
       "max_pages": 2,
       "fixture": "mps.html",
-      "notes": "Tour dates for the largest travelling medieval spectacle in Germany."
+      "notes": "Tour dates for the largest travelling medieval spectacle in Germany.",
+      "enabled": false
     },
     {
       "slug": "burg-satzvey",
       "name": "Burg Satzvey",
-      "url": "https://www.burg-satzvey.de/veranstaltungen",
+      "url": "https://www.burgsatzvey.de/veranstaltungen/",
       "category": "markt",
-      "max_pages": 2,
+      "max_pages": 1,
       "fixture": "satzvey.html",
-      "notes": "Wasserburg event calendar: markets, tournaments, cosplay."
+      "notes": "Wasserburg event calendar: markets, tournaments, cosplay.",
+      "enabled": true,
+      "location": {
+        "name": "Burg Satzvey",
+        "address": {
+          "streetAddress": "An der Burg 3",
+          "postalCode": "53894",
+          "addressLocality": "Mechernich"
+        }
+      }
     },
     {
       "slug": "burg-ronneburg",
@@ -30,84 +40,96 @@
       "category": "markt",
       "max_pages": 1,
       "fixture": "ronneburg.html",
-      "notes": "Small castle calendar in Hesse with Christmas and summer markets."
+      "notes": "Small castle calendar in Hesse with Christmas and summer markets.",
+      "enabled": false
     },
     {
       "slug": "kaltenberg",
       "name": "Schloss Kaltenberg",
       "url": "https://www.kaltenberg.de/ritterturnier",
       "category": "turnier",
-      "max_pages": 1
+      "max_pages": 1,
+      "enabled": false
     },
     {
       "slug": "landshuter-hochzeit",
       "name": "Landshuter Hochzeit 1475",
       "url": "https://www.landshuter-hochzeit.de",
       "category": "reenactment",
-      "max_pages": 1
+      "max_pages": 1,
+      "enabled": false
     },
     {
       "slug": "drachenfest",
       "name": "Drachenfest",
       "url": "https://www.drachenfest.info",
       "category": "larp",
-      "max_pages": 1
+      "max_pages": 1,
+      "enabled": false
     },
     {
       "slug": "epic-empires",
       "name": "Epic Empires",
       "url": "https://www.epic-empires.de",
       "category": "larp",
-      "max_pages": 1
+      "max_pages": 1,
+      "enabled": false
     },
     {
       "slug": "conquest",
       "name": "ConQuest of Myths",
       "url": "https://www.conquest-of-myths.de",
       "category": "larp",
-      "max_pages": 1
+      "max_pages": 1,
+      "enabled": false
     },
     {
       "slug": "dokomi",
       "name": "DoKomi",
       "url": "https://www.dokomi.de",
       "category": "cosplay",
-      "max_pages": 1
+      "max_pages": 1,
+      "enabled": false
     },
     {
       "slug": "animagic",
       "name": "AnimagiC",
       "url": "https://www.animagic.de",
       "category": "cosplay",
-      "max_pages": 1
+      "max_pages": 1,
+      "enabled": false
     },
     {
       "slug": "mittelaltermarkt-kalender",
       "name": "Mittelaltermarkt.de",
       "url": "https://www.mittelaltermarkt.de/termine",
       "category": "markt",
-      "max_pages": 3
+      "max_pages": 3,
+      "enabled": false
     },
     {
       "slug": "larpkalender",
       "name": "LARP-Kalender",
       "url": "https://www.larpkalender.de/termine",
       "category": "larp",
-      "max_pages": 3
+      "max_pages": 1,
+      "enabled": true
     },
     {
       "slug": "wartburg",
       "name": "Wartburg",
       "url": "https://www.wartburg.de/de/veranstaltungen",
       "category": "markt",
-      "max_pages": 1
+      "max_pages": 1,
+      "enabled": false
     },
     {
       "slug": "burg-altena",
       "name": "Burg Altena",
       "url": "https://www.burg-altena.de/veranstaltungen",
       "category": "turnier",
-      "max_pages": 1
+      "max_pages": 1,
+      "enabled": false
     }
   ]
 }

@@ -57,7 +57,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def select_sources(all_sources: list[Source], args: argparse.Namespace) -> list[Source]:
-    sources = [source for source in all_sources if source.enabled]
+    sources = [source for source in all_sources if source.enabled or (args.offline and args.sources)]
     if args.sources:
         selected = {slug.strip() for slug in args.sources.split(",") if slug.strip()}
         sources = [source for source in sources if source.slug in selected]
@@ -115,6 +115,10 @@ def main(argv: list[str] | None = None) -> int:
             for page in fetch_pages(source, fetcher, fixture_dir):
                 pages_fetched += 1
                 extracted = extract_events(page, source, settings, allow_ai=settings.use_ai)
+                if fixture_dir and not extracted:
+                    from .extractor import heuristic_extract
+                    fallback = heuristic_extract(page, source)
+                    extracted = [fallback] if fallback else []
                 drafts.extend(extracted)
                 LOGGER.info("%s: %d events from %s", source.slug, len(extracted), page.url)
         except Exception as error:  # noqa: BLE001 - one broken source must not stop the run
@@ -160,6 +164,9 @@ def main(argv: list[str] | None = None) -> int:
         len(without_location),
     )
 
+    if not unique and not args.offline:
+        LOGGER.error("No verified events; keeping previous export unchanged")
+        return 1
     write_events_json(unique, args.out, summary)
 
     if args.publish:

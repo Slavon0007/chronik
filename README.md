@@ -376,3 +376,7 @@ chronik/
 - проверяйте точность дат и адресов перед боевым запуском.
 
 Контакты для вопросов и предложений: `hello@chronik.events`.
+
+
+## Collection without AI (current deployment)
+GitHub Pages rebuilds daily at 04:15 UTC. The build runs `python -m backend.pipeline --no-ai --out public/events.json`. No API key or Supabase account is required. Verified adapters: Burg Satzvey schema.org events and LARP-Kalender listing rows (50 newest entries). Other sources are disabled pending adapter validation. All category filters remain available. Postal-code locations are approximate and routing is disabled for these entries. Zero-result collection fails instead of replacing the last published catalogue.

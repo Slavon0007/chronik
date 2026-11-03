@@ -3,6 +3,8 @@ name: Deploy PWA to GitHub Pages
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '15 4 * * *'
   workflow_dispatch:
 
 permissions:
@@ -30,6 +32,20 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: crawler-${{ github.run_id }}
+          restore-keys: crawler-
+      - name: Collect real events without AI
+        run: |
+          pip install -r backend/requirements.txt
+          python -m unittest discover -s backend/tests -v
+          python -m backend.pipeline --no-ai --out public/events.json
 
       - name: Build static PWA
         env:

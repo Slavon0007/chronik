@@ -405,7 +405,7 @@ export function Sidebar({
         <div className="sidebar__fineprint">
           <span className="data-source">
             <span className="status-dot" aria-hidden="true" />
-            {dataSource === 'supabase' ? 'Live aus Supabase' : 'Prototyp · Beispieldaten'}
+            {dataSource === 'supabase' ? 'Live aus Supabase' : 'Automatisch gesammelt'}
           </span>
           {canInstall && (
             <>

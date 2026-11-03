@@ -117,7 +117,7 @@ export function ListPanel({
           <span className="status-dot" aria-hidden="true" />
           {dataSource === 'supabase'
             ? 'Live aus Supabase · automatisch aktualisiert'
-            : 'Prototyp · Beispieldaten aus dem Redaktionskatalog'}
+            : 'Automatisch gesammelt · Offizielle Quelle in jeder Karte'}
         </footer>
       </aside>
     </>

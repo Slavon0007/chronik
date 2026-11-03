@@ -5,7 +5,6 @@ import { MapView, type MapEvent } from './components/MapView'
 import { ListPanel } from './components/ListPanel'
 import { EventDetails } from './components/EventDetails'
 import { CATEGORIES, ALL_CATEGORIES } from './data/categories'
-import { EVENTS } from './data/events'
 import { CITIES } from './data/cities'
 import { haversineKm, nearestCity } from './lib/geo'
 import { eventOverlapsRange, getDateRange, isEventCurrent, parseDate } from './lib/dates'
@@ -43,11 +42,10 @@ export default function App() {
   const [focus, setFocus] = useState<{ id: string; token: number } | null>(null)
   const [resetToken, setResetToken] = useState(0)
   const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null)
-  const [catalog, setCatalog] = useState<ChronikEvent[]>(isSupabaseConfigured ? [] : EVENTS)
+  const [catalog, setCatalog] = useState<ChronikEvent[]>([])
   const [dataSource, setDataSource] = useState<'demo' | 'supabase'>(isSupabaseConfigured ? 'supabase' : 'demo')
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return
     let cancelled = false
     fetchPublishedEvents()
       .then((liveEvents) => {

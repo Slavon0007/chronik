@@ -78,7 +78,7 @@ def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     return 2 * radius * math.asin(min(1.0, math.sqrt(a)))
 
 
-def dates_overlap(a: EventDraft, b: EventDraft, tolerance_days: int = 1) -> bool:
+def dates_overlap(a: EventDraft, b: EventDraft, tolerance_days: int = 0) -> bool:
     tolerance = timedelta(days=tolerance_days)
     return a.start_date <= (b.end_date + tolerance) and b.start_date <= (a.end_date + tolerance)
 

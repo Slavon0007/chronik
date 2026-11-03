@@ -1,9 +1,6 @@
 name: Collect events
 
 on:
-  schedule:
-    # Every day at 04:15 UTC (05:15/06:15 in Germany depending on DST).
-    - cron: '15 4 * * *'
   workflow_dispatch:
     inputs:
       sources:
@@ -60,7 +57,7 @@ jobs:
           CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
           CRAWLER_USER_AGENT: ChronikBot/1.0 (+https://chronik.events/bot; mailto:${{ secrets.CONTACT_EMAIL }})
         run: |
-          python -m backend.pipeline --publish --sources "$SELECTED_SOURCES" --out backend/data/events.json
+          python -m backend.pipeline --no-ai --sources "$SELECTED_SOURCES" --out backend/data/events.json
 
       - name: Upload run artefact
         if: always()

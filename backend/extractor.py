@@ -44,6 +44,10 @@ def extract_events(
     settings: Settings,
     allow_ai: bool = True,
 ) -> list[EventDraft]:
+    if page.structured_events:
+        return page.structured_events
+    if not allow_ai:
+        return []
     if allow_ai and settings.has_ai:
         try:
             events = ai_extract(page, source, settings)

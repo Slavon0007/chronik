@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from dataclasses import replace
 from urllib.parse import urlparse, urldefrag
@@ -37,6 +37,7 @@ class Source:
     enabled: bool = True
     fixture: str = ""
     notes: str = ""
+    location: dict = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict) -> "Source":
@@ -49,6 +50,7 @@ class Source:
             enabled=bool(data.get("enabled", True)),
             fixture=str(data.get("fixture", "")),
             notes=str(data.get("notes", "")),
+            location=data.get("location") or {},
         )
 
 
@@ -72,7 +74,10 @@ def fetch_page(source: Source, fetcher: Fetcher, fixture_dir: Path | None = None
         raw = load_fixture(source, fixture_dir)
     else:
         raw = fetcher.fetch(source.url).text
-    return parse_page(raw, source.url)
+    page = parse_page(raw, source.url)
+    from .parsers import parse_events
+    page.structured_events = parse_events(lxml_html.fromstring(raw), source.url, source)
+    return page
 
 
 def parse_page(raw_html: str, url: str) -> PageContent:

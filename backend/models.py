@@ -204,3 +204,4 @@ class PageContent:
     text: str
     paragraphs: list[str]
     links: list[tuple[str, str]]
+    structured_events: list = field(default_factory=list)

@@ -104,7 +104,7 @@ class Geocoder:
             lng = float(top["lon"])
             if not (47.0 <= lat <= 55.5 and 5.5 <= lng <= 15.5):
                 return None
-            return GeocodeResult(lat=lat, lng=lng, label=top.get("display_name", query), source="nominatim")
+            return GeocodeResult(lat=lat, lng=lng, label=top.get("display_name", query), source="city" if top.get("addresstype") in {"city", "town", "village", "municipality", "postcode", "county", "state"} else "nominatim")
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError, KeyError) as error:
             LOGGER.warning("Nominatim failed for %r: %s", query, error)
             self._last_request = time.monotonic()
@@ -151,7 +151,7 @@ def geocode_events(
             continue
         event.lat = round(result.lat, 6)
         event.lng = round(result.lng, 6)
-        event.location_precision = "city" if result.source == "city" else "venue"
+        event.location_precision = "city" if result.source == "city" or (event.address == event.zip and not event.venue) else "venue"
         if not event.city:
             event.city = result.label.split(",")[0]
         geocoded += 1
