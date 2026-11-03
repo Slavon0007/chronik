@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+.pnpm-store/
+.npm-cache/
+package-lock.json.tmp
+
+# builds
+dist/
+
+# local env & secrets
+.env
+.env.local
+.env.*.local
+
+# crawler state / caches
+.cache/
+backend/.cache/
+
+# editor / os
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# test artefacts
+backend/tests/.tmp-events.json

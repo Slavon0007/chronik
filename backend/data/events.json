@@ -1,0 +1,92 @@
+{
+  "generated_at": "2026-11-03T17:55:55.234188+00:00",
+  "count": 3,
+  "summary": {
+    "sources": 3,
+    "pages_fetched": 3,
+    "drafts": 3,
+    "geocoded": 3,
+    "duplicates_merged": 0,
+    "without_location": 0,
+    "published": 0,
+    "archived": 0,
+    "errors": []
+  },
+  "events": [
+    {
+      "title": "Ronneburger Burgweihnacht",
+      "category": "markt",
+      "start_date": "2026-12-05",
+      "end_date": "2026-12-06",
+      "source_name": "Burg Ronneburg",
+      "source_url": "https://www.burg-ronneburg.de/veranstaltungen",
+      "city": "Ronneburg",
+      "venue": "Burg Ronneburg",
+      "address": "Burgstraße 1, 63549 Ronneburg",
+      "zip": "63549",
+      "opening_hours": "Sa 12–20 Uhr, So 11–19 Uhr",
+      "description": "Kerzenlicht, Glühwein und Handwerkskunst im Burghof der Ronneburg. Die Weihnacht steht ganz im Zeichen von Feuer, Musik und mittelalterlicher Marktatmosphäre.",
+      "organizer": "Burg Ronneburg",
+      "website": "https://www.burg-ronneburg.de",
+      "price": "Eintritt: Erwachsene 9 €, Kinder 4 €",
+      "lat": 50.2177,
+      "lng": 9.0556,
+      "confidence": 0.72,
+      "image_url": "",
+      "source_urls": [
+        "https://www.burg-ronneburg.de/veranstaltungen"
+      ],
+      "dedupe_key": "0e8c4e0f944fe9b92e01706e83d5cc311a3ff6c8"
+    },
+    {
+      "title": "MPS Köln",
+      "category": "markt",
+      "start_date": "2027-05-14",
+      "end_date": "2027-05-16",
+      "source_name": "Mittelalterlich Phantasie Spectaculum",
+      "source_url": "https://www.mps-spectaculum.de/termine",
+      "city": "Köln",
+      "venue": "Fühlinger See",
+      "address": "Fühlinger See, 50769 Köln",
+      "zip": "50769",
+      "opening_hours": "Fr 14–22 Uhr, Sa 11–23 Uhr, So 11–21 Uhr",
+      "description": "Drei Tage Heerlager, Ritterkämpfe, Musik und ein großer Markt am Fühlinger See. Am Abend gibt es Feuershows und Konzerte.",
+      "organizer": "Mittelalterlich Phantasie Spectaculum",
+      "website": "https://www.mps-spectaculum.de/tickets",
+      "price": "Tageskarte ab 18 €",
+      "lat": 50.9375,
+      "lng": 6.9603,
+      "confidence": 0.72,
+      "image_url": "",
+      "source_urls": [
+        "https://www.mps-spectaculum.de/termine"
+      ],
+      "dedupe_key": "e4af2aabe93434af050bf352968c38ea39fcb40f"
+    },
+    {
+      "title": "Ritterspiele Burg Satzvey",
+      "category": "markt",
+      "start_date": "2027-05-29",
+      "end_date": "2027-05-30",
+      "source_name": "Burg Satzvey",
+      "source_url": "https://www.burg-satzvey.de/veranstaltungen",
+      "city": "Mechernich",
+      "venue": "Burg Satzvey",
+      "address": "Burg Satzvey, 53894 Mechernich",
+      "zip": "53894",
+      "opening_hours": "Sa/So 11–20 Uhr, Turnier 15 und 18 Uhr",
+      "description": "Ritterspiele vor der Wasserburg mit Lanzenstechen, Fußturnier und Kinderrittern. Zwischen den Turnieren spielen Gaukler und Musikanten im Burghof.",
+      "organizer": "Burg Satzvey",
+      "website": "https://www.burg-satzvey.de/tickets",
+      "price": "Eintritt: Erwachsene 16 €, Kinder 9 €",
+      "lat": 50.5917,
+      "lng": 6.6531,
+      "confidence": 0.72,
+      "image_url": "",
+      "source_urls": [
+        "https://www.burg-satzvey.de/veranstaltungen"
+      ],
+      "dedupe_key": "5e7606b84cf607e7f32a31da6ccdfd0aca51efce"
+    }
+  ]
+}
