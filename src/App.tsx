@@ -51,7 +51,7 @@ export default function App() {
       .then((liveEvents) => {
         if (cancelled) return
         setCatalog(liveEvents)
-        setDataSource('supabase')
+        setDataSource(isSupabaseConfigured ? 'supabase' : 'demo')
       })
       .catch((error: unknown) => {
         if (!cancelled) setToast({ message: 'Veranstaltungen konnten nicht geladen werden. Bitte erneut laden.', id: Date.now() })

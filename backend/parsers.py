@@ -74,7 +74,7 @@ def parse_events(document, url, source):
             match = re.search(r'PLZ:\s*(\d{5})', text)
             zip_code = match.group(1) if match else ''
             city = city_for_zip(zip_code) if zip_code else None
-            city = city or find_city(text)
+            # Region names in the listing are not reliable city names.
             # Do not geocode a whole calendar entry: use only its named place/ZIP.
             link = urljoin(url, links[0].get('href'))
             events.append(EventDraft(
