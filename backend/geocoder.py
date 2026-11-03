@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -43,7 +44,8 @@ class Geocoder:
             return None
 
         cached = self._cache.get(cache_key)
-        if cached and (self.offline or cached.get("source") != "city"):
+        if cached and (self.offline or cached.get("source") != "city"
+                       or time.time() - cached.get("cached_at", 0) < 86400):
             return GeocodeResult(
                 lat=float(cached["lat"]),
                 lng=float(cached["lng"]),
@@ -53,6 +55,15 @@ class Geocoder:
 
         if not self.offline and self.settings.use_geocoder and query:
             result = self._nominatim(query)
+            postal = re.search(r'\b\d{5}\b', query)
+            if result is None and postal and query != postal.group(0):
+                result = self._nominatim(postal.group(0))
+                if result:
+                    result.source = 'city'
+            if result is None and not postal and city and query != city:
+                result = self._nominatim(city)
+                if result:
+                    result.source = 'city'
             if result:
                 self._store(cache_key, result)
                 return result
@@ -121,6 +132,7 @@ class Geocoder:
 
     def _store(self, key: str, result: GeocodeResult) -> None:
         self._cache[key] = {
+            "cached_at": time.time(),
             "lat": result.lat,
             "lng": result.lng,
             "label": result.label,

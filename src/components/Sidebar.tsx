@@ -25,7 +25,7 @@ type Props = {
   locating: boolean
   mobileOpen: boolean
   canInstall: boolean
-  dataSource: 'demo' | 'supabase'
+  dataSource: 'static' | 'supabase'
   resetToken: number
   onToggleCategory: (id: CategoryId) => void
   onDateFilter: (filter: DateFilterId) => void

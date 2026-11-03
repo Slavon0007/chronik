@@ -149,7 +149,7 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave }: 
               rel="noopener noreferrer"
             >
               <ExternalLink size={15} />
-              Zum Veranstalter
+              Zur Veranstaltungsseite
             </a>
           </div>
 

@@ -205,3 +205,4 @@ class PageContent:
     paragraphs: list[str]
     links: list[tuple[str, str]]
     structured_events: list = field(default_factory=list)
+    crawl_urls: list[str] = field(default_factory=list)

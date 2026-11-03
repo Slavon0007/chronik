@@ -8,12 +8,13 @@
     {
       "slug": "mps-spectaculum",
       "name": "Mittelalterlich Phantasie Spectaculum",
-      "url": "https://www.mps-spectaculum.de/termine",
+      "url": "https://spectaculum.de/",
       "category": "markt",
-      "max_pages": 2,
+      "max_pages": 1,
       "fixture": "mps.html",
-      "notes": "Tour dates for the largest travelling medieval spectacle in Germany.",
-      "enabled": false
+      "notes": "Validated homepage season cards, excluding provisional unlinked dates.",
+      "enabled": true,
+      "requested_url": "https://spectaculum.de"
     },
     {
       "slug": "burg-satzvey",
@@ -62,10 +63,12 @@
     {
       "slug": "drachenfest",
       "name": "Drachenfest",
-      "url": "https://www.drachenfest.info",
+      "url": "https://www.drachenfest-ticketshop.info/termine-df-und-zdl",
       "category": "larp",
       "max_pages": 1,
-      "enabled": false
+      "enabled": true,
+      "requested_url": "https://drachenfest.info",
+      "notes": "Official date page linked by DrachenFest; main site returned HTTP 503."
     },
     {
       "slug": "epic-empires",
@@ -86,18 +89,32 @@
     {
       "slug": "dokomi",
       "name": "DoKomi",
-      "url": "https://www.dokomi.de",
+      "url": "https://www.dokomi.de/de/veranstaltung/wann-und-wo",
       "category": "cosplay",
       "max_pages": 1,
-      "enabled": false
+      "enabled": true,
+      "location": {
+        "name": "Messe Düsseldorf",
+        "address": {
+          "streetAddress": "Am Staad",
+          "postalCode": "40474",
+          "addressLocality": "Düsseldorf"
+        }
+      }
     },
     {
       "slug": "animagic",
       "name": "AnimagiC",
-      "url": "https://www.animagic.de",
+      "url": "https://animagic.de/",
       "category": "cosplay",
       "max_pages": 1,
-      "enabled": false
+      "enabled": true,
+      "location": {
+        "name": "Rosengarten Mannheim",
+        "address": {
+          "addressLocality": "Mannheim"
+        }
+      }
     },
     {
       "slug": "mittelaltermarkt-kalender",
@@ -130,6 +147,86 @@
       "category": "turnier",
       "max_pages": 1,
       "enabled": false
+    },
+    {
+      "slug": "suendenfrei",
+      "name": "Sündenfrei",
+      "url": "https://www.suendenfrei.tv/terminuebersicht",
+      "category": "markt",
+      "max_pages": 1,
+      "enabled": true
+    },
+    {
+      "slug": "mittelalterkalender",
+      "name": "Mittelalterkalender",
+      "url": "https://mittelalterkalender.info/",
+      "category": "markt",
+      "max_pages": 1,
+      "enabled": true
+    },
+    {
+      "slug": "larp-radar",
+      "name": "Larp Radar",
+      "url": "https://larp-radar.com/de/larps/country/germany",
+      "requested_url": "https://larp-radar.com/de",
+      "category": "larp",
+      "enabled": true,
+      "max_pages": 16,
+      "link_selector": "//a[starts-with(@href,\"/de/larp/\")]/@href"
+    },
+    {
+      "slug": "eventgilde",
+      "name": "EventGilde",
+      "url": "https://eventgilde.com/events",
+      "requested_url": "https://eventgilde.com",
+      "category": "markt",
+      "enabled": true,
+      "max_pages": 24,
+      "link_selector": "//a[contains(@class,\"event-card\") and starts-with(@href,\"/event/\")]/@href",
+      "extra_urls": [
+        "https://eventgilde.com/mittelaltermaerkte/2027"
+      ]
+    },
+    {
+      "slug": "live-adventure",
+      "name": "Realms of Mythodea / Live Adventure",
+      "url": "https://realmsofmythodea.com/",
+      "requested_url": "https://live-adventure.de",
+      "category": "larp",
+      "enabled": true,
+      "max_pages": 8,
+      "notes": "Live Adventure redirects to the current organizer site.",
+      "link_selector": "//a[contains(.,\"WEITERLESEN\")]/@href"
+    },
+    {
+      "slug": "histofaber",
+      "name": "HistoFaber",
+      "url": "https://histofaber.de/termine-und-veranstaltungen/termine-2026",
+      "requested_url": "https://histofaber.de",
+      "category": "reenactment",
+      "enabled": false,
+      "max_pages": 1,
+      "notes": "HTTP 503 on homepage and calendar during validation 2026-11-03; adapter pending."
+    },
+    {
+      "slug": "history-event",
+      "name": "History Event",
+      "url": "https://history-event.de/",
+      "requested_url": "https://history-event.de",
+      "category": "reenactment",
+      "enabled": false,
+      "max_pages": 1,
+      "notes": "HTTP 503 during validation 2026-11-03; adapter pending."
+    },
+    {
+      "slug": "vehi-mercatus",
+      "name": "Vehi Mercatus",
+      "url": "https://vehi-mercatus.de/marktkalender/",
+      "requested_url": "https://vehi-mercatus.de/marktkalender",
+      "category": "markt",
+      "enabled": false,
+      "max_pages": 1,
+      "notes": "HTTP 401 for calendar and year page during validation 2026-11-03; no authentication bypass attempted."
     }
   ]
 }

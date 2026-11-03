@@ -43,7 +43,7 @@ export default function App() {
   const [resetToken, setResetToken] = useState(0)
   const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null)
   const [catalog, setCatalog] = useState<ChronikEvent[]>([])
-  const [dataSource, setDataSource] = useState<'demo' | 'supabase'>(isSupabaseConfigured ? 'supabase' : 'demo')
+  const [dataSource, setDataSource] = useState<'static' | 'supabase'>(isSupabaseConfigured ? 'supabase' : 'static')
 
   useEffect(() => {
     let cancelled = false
@@ -51,7 +51,7 @@ export default function App() {
       .then((liveEvents) => {
         if (cancelled) return
         setCatalog(liveEvents)
-        setDataSource(isSupabaseConfigured ? 'supabase' : 'demo')
+        setDataSource(isSupabaseConfigured ? 'supabase' : 'static')
       })
       .catch((error: unknown) => {
         if (!cancelled) setToast({ message: 'Veranstaltungen konnten nicht geladen werden. Bitte erneut laden.', id: Date.now() })

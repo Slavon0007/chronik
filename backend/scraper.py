@@ -38,6 +38,8 @@ class Source:
     fixture: str = ""
     notes: str = ""
     location: dict = field(default_factory=dict)
+    link_selector: str = ''
+    extra_urls: list[str] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict) -> "Source":
@@ -51,6 +53,8 @@ class Source:
             fixture=str(data.get("fixture", "")),
             notes=str(data.get("notes", "")),
             location=data.get("location") or {},
+            link_selector=str(data.get("link_selector", "")),
+            extra_urls=list(data.get("extra_urls") or []),
         )
 
 
@@ -76,7 +80,11 @@ def fetch_page(source: Source, fetcher: Fetcher, fixture_dir: Path | None = None
         raw = fetcher.fetch(source.url).text
     page = parse_page(raw, source.url)
     from .parsers import parse_events
-    page.structured_events = parse_events(lxml_html.fromstring(raw), source.url, source)
+    document = lxml_html.fromstring(raw)
+    page.structured_events = parse_events(document, source.url, source)
+    if source.link_selector:
+        from urllib.parse import urljoin
+        page.crawl_urls = list(dict.fromkeys(urljoin(source.url, href) for href in document.xpath(source.link_selector)))
     return page
 
 
@@ -158,7 +166,8 @@ __all__ = [
 
 def fetch_pages(source: Source, fetcher: Fetcher, fixture_dir: Path | None = None):
     """Bounded same-origin traversal of event details and calendar pagination."""
-    queue = [source.url]
+    seeds = [source.url, *source.extra_urls]
+    queue = seeds.copy()
     seen = set()
     budget = 1 if fixture_dir else max(1, source.max_pages)
     while queue and len(seen) < budget:
@@ -168,6 +177,11 @@ def fetch_pages(source: Source, fetcher: Fetcher, fixture_dir: Path | None = Non
         seen.add(url)
         page = fetch_page(replace(source, url=url), fetcher, fixture_dir)
         yield page
+        for href in page.crawl_urls if url in seeds else []:
+            if urlparse(href).netloc == urlparse(source.url).netloc and href not in seen and href not in queue:
+                queue.append(href)
+        if source.link_selector:
+            continue
         for label, href in page.links:
             href = urldefrag(href)[0]
             parsed = urlparse(href)

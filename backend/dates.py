@@ -38,6 +38,11 @@ MONTHS = {
 MONTH_PATTERN = r"(?:Januar|Jänner|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember|Jan|Feb|Mär|Mrz|Apr|Jun|Jul|Aug|Sep|Sept|Okt|Nov|Dez)\.?"
 
 RANGE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    # 09.01 - 10.01.2027: the year applies to both dates.
+    (
+        re.compile(r"(?P<d1>\d{1,2})\.(?P<m1>\d{1,2})\.?\s*(?:–|—|-|bis|\+)\s*(?P<d2>\d{1,2})\.(?P<m2>\d{1,2})\.(?P<year>20\d{2})"),
+        "numeric_short_range",
+    ),
     # 07.–08. November 2026 / 7. bis 8. November 2026
     (
         re.compile(
@@ -115,9 +120,9 @@ def find_date_range(text: str) -> DateRange | None:
                 year = int(groups["year"])
                 month = _month_number(groups.get("month") or groups.get("m1") or "")
                 end_month = _month_number(groups.get("m2") or "") or month
-                if kind == "numeric_single":
+                if kind in ("numeric_single", "numeric_short_range"):
                     month = int(groups["m1"])
-                    end_month = month
+                    end_month = int(groups.get("m2") or groups["m1"])
                 if not month:
                     continue
                 start = _safe_date(year, month, int(groups["d1"]))

@@ -7,7 +7,7 @@ type Props = {
   events: (ChronikEvent & { distance: number | null })[]
   savedIds: string[]
   hasLocation: boolean
-  dataSource: 'demo' | 'supabase'
+  dataSource: 'static' | 'supabase'
   onClose: () => void
   onOpenEvent: (id: string) => void
   onToggleSave: (id: string) => void

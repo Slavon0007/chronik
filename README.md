@@ -380,3 +380,19 @@ chronik/
 
 ## Collection without AI (current deployment)
 GitHub Pages rebuilds daily at 04:15 UTC. The build runs `python -m backend.pipeline --no-ai --out public/events.json`. No API key or Supabase account is required. Verified adapters: Burg Satzvey schema.org events and LARP-Kalender listing rows (50 newest entries). Other sources are disabled pending adapter validation. All category filters remain available. Postal-code locations are approximate and routing is disabled for these entries. Zero-result collection fails instead of replacing the last published catalogue.
+
+
+### Expanded source coverage
+The active adapters now cover six independently fetched sources:
+- Burg Satzvey: schema.org events; dinner, seminars, workshops and readings are excluded.
+- LARP-Kalender: the 50 newest listing entries.
+- Sündenfrei: dated tour calendar rows; starred, cancelled and unconfirmed entries are excluded.
+- Mittelalterkalender: the current table of upcoming events, with separate start/end dates and detail URLs.
+- DoKomi: official announced date range, venue and published coordinates.
+- AnimagiC: official convention date announcement and Rosengarten Mannheim venue.
+
+Categories are determined from explicit names (tournaments, cosplay, reenactment), with a source-specific fallback. Calendar sources cover the entries currently published on their fetched pages; this is not an exhaustive inventory of Germany. Category filters can still be empty for a selected date or radius. `summary.source_counts` records extraction counts before expired entries and duplicates are removed. City/ZIP locations are approximate; directions are disabled for those records. Source detail links may lead to a calendar rather than the organizer.
+
+
+### User-supplied source list
+All 11 supplied sites have been checked. Eight are active (some via current canonical/official date pages); HistoFaber and History Event returned HTTP 503, and Vehi Mercatus returned HTTP 401, so they remain registered but disabled. Together with Burg Satzvey, DoKomi and AnimagiC, there are 11 active sources. See [source status and coverage](docs/sources.md) for validated URLs and limits.

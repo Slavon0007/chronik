@@ -1,5 +1,5 @@
 /* Chronik service worker — app-shell offline support, base-path aware. */
-const VERSION = 'chronik-v2'
+const VERSION = 'chronik-v3'
 const SCOPE = self.registration.scope
 const url = (path) => new URL(path, SCOPE).href
 

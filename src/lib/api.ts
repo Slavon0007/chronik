@@ -37,8 +37,7 @@ function categoryOf(value: string): CategoryId {
 
 /**
  * Reads the public read model created by supabase/schema.sql.
- * The prototype falls back to bundled editorial demo data when no
- * Supabase environment variables are configured.
+ * Without Supabase, reads the daily collected static catalogue.
  */
 export async function fetchPublishedEvents(): Promise<ChronikEvent[]> {
   const useDatabase = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY)
@@ -81,7 +80,7 @@ export async function fetchPublishedEvents(): Promise<ChronikEvent[]> {
         end: row.end_date,
         time: row.opening_hours || '',
         description: row.description || '',
-        organizer: row.organizer || row.source_name || '',
+        organizer: row.organizer || 'Siehe Veranstaltungsseite',
         website: row.website || row.source_url || '',
         price: row.price || 'Siehe Veranstalter',
         attendanceConditions: row.attendance_conditions || '',

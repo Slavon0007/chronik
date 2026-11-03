@@ -101,6 +101,7 @@ def main(argv: list[str] | None = None) -> int:
     drafts: list[EventDraft] = []
     errors: list[str] = []
     pages_fetched = 0
+    source_counts: dict[str, int] = {}
 
     LOGGER.info(
         "Starting collection: %d sources, mode=%s, ai=%s, geocoder=%s",
@@ -119,6 +120,7 @@ def main(argv: list[str] | None = None) -> int:
                     from .extractor import heuristic_extract
                     fallback = heuristic_extract(page, source)
                     extracted = [fallback] if fallback else []
+                source_counts[source.slug] = source_counts.get(source.slug, 0) + len(extracted)
                 drafts.extend(extracted)
                 LOGGER.info("%s: %d events from %s", source.slug, len(extracted), page.url)
         except Exception as error:  # noqa: BLE001 - one broken source must not stop the run
@@ -146,6 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     finished_at = datetime.now(timezone.utc)
     summary = {
         "sources": len(selected),
+        "source_counts": source_counts,
         "pages_fetched": pages_fetched,
         "drafts": len(drafts),
         "geocoded": geocoded,
