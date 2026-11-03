@@ -24,6 +24,8 @@ type EventRow = {
   price?: string | null
   source_url?: string | null
   source_name?: string | null
+  attendance_conditions?: string | null
+  location_precision?: string | null
   confidence?: number | string | null
 }
 
@@ -42,7 +44,7 @@ export async function fetchPublishedEvents(): Promise<ChronikEvent[]> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return []
 
   const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/active_events?select=id,title,category,start_date,end_date,opening_hours,venue,address,zip,city,lat,lng,description,organizer,website,price,source_url,source_name,confidence&order=start_date.asc&limit=1000`,
+    `${SUPABASE_URL}/rest/v1/active_events?select=id,title,category,start_date,end_date,opening_hours,venue,address,zip,city,lat,lng,description,organizer,website,price,source_url,source_name,confidence,attendance_conditions,location_precision&order=start_date.asc&limit=1000`,
     {
       headers: {
         apikey: SUPABASE_ANON_KEY,
@@ -80,6 +82,8 @@ export async function fetchPublishedEvents(): Promise<ChronikEvent[]> {
         organizer: row.organizer || row.source_name || '',
         website: row.website || row.source_url || '',
         price: row.price || 'Siehe Veranstalter',
+        attendanceConditions: row.attendance_conditions || '',
+        locationPrecision: row.location_precision || 'unknown',
         highlight: Number(row.confidence || 0) >= 0.85,
       } satisfies ChronikEvent
     })

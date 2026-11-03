@@ -6,6 +6,8 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from dataclasses import replace
+from urllib.parse import urlparse, urldefrag
 
 from lxml import html as lxml_html
 
@@ -147,3 +149,26 @@ __all__ = [
     "source_config_path",
     "Settings",
 ]
+
+
+def fetch_pages(source: Source, fetcher: Fetcher, fixture_dir: Path | None = None):
+    """Bounded same-origin traversal of event details and calendar pagination."""
+    queue = [source.url]
+    seen = set()
+    budget = 1 if fixture_dir else max(1, source.max_pages)
+    while queue and len(seen) < budget:
+        url = queue.pop(0)
+        if url in seen:
+            continue
+        seen.add(url)
+        page = fetch_page(replace(source, url=url), fetcher, fixture_dir)
+        yield page
+        for label, href in page.links:
+            href = urldefrag(href)[0]
+            parsed = urlparse(href)
+            if parsed.netloc != urlparse(source.url).netloc or parsed.scheme not in ("http", "https"):
+                continue
+            if any(word in (label + " " + parsed.path).lower() for word in
+                   ("veranstaltung", "termin", "event", "mehr", "detail", "weiter", "next", "page")):
+                if href not in seen and href not in queue:
+                    queue.append(href)

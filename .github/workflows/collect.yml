@@ -53,13 +53,14 @@ jobs:
       - name: Collect and publish
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SELECTED_SOURCES: ${{ inputs.sources }}
           OPENAI_MODEL: gpt-4o-mini
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
           CRAWLER_USER_AGENT: ChronikBot/1.0 (+https://chronik.events/bot; mailto:${{ secrets.CONTACT_EMAIL }})
         run: |
-          python -m backend.pipeline --publish --out backend/data/events.json
+          python -m backend.pipeline --publish --sources "$SELECTED_SOURCES" --out backend/data/events.json
 
       - name: Upload run artefact
         if: always()

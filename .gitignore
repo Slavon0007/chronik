@@ -24,3 +24,7 @@ Thumbs.db
 
 # test artefacts
 backend/tests/.tmp-events.json
+
+.venv/
+__pycache__/
+*.pyc

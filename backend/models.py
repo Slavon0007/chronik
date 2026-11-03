@@ -80,6 +80,8 @@ class EventDraft:
     lng: float | None = None
     confidence: float = 0.5
     image_url: str = ""
+    location_precision: str = "unknown"
+    attendance_conditions: str = ""
     source_urls: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
@@ -147,6 +149,8 @@ class EventDraft:
             "website": self.website,
             "price": self.price,
             "image_url": self.image_url,
+            "location_precision": self.location_precision,
+            "attendance_conditions": self.attendance_conditions,
             "source_url": self.source_url,
             "source_name": self.source_name,
             "source_urls": list(dict.fromkeys(self.source_urls)),
@@ -177,6 +181,8 @@ class EventDraft:
             lng=float(data["lng"]) if data.get("lng") is not None else None,
             confidence=float(data.get("confidence", 0.5)),
             image_url=str(data.get("image_url", "")),
+            location_precision=str(data.get("location_precision", "unknown")),
+            attendance_conditions=str(data.get("attendance_conditions", "")),
             source_urls=list(data.get("source_urls") or []),
         )
 

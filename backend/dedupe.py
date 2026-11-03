@@ -92,7 +92,10 @@ def is_duplicate(a: EventDraft, b: EventDraft) -> tuple[bool, str]:
 
     # The same page can describe several events (e.g. a tour calendar), so the
     # source URL alone is not enough to merge records.
-    if a.source_url and a.source_url == b.source_url and similarity >= 0.8:
+    if (a.source_url and a.source_url == b.source_url and similarity >= 0.8
+            and a.city and a.city.casefold() == b.city.casefold()
+            and a.has_location and b.has_location
+            and haversine_km(a.lat, a.lng, b.lat, b.lng) <= 0.8):
         return True, "same source page and similar title"
 
     distance: float | None = None
@@ -113,9 +116,9 @@ def is_duplicate(a: EventDraft, b: EventDraft) -> tuple[bool, str]:
         return False, "different cities"
 
     if distance is not None:
-        if distance <= 0.8 and (similarity >= 0.52 or same_venue):
+        if distance <= 0.8 and similarity >= 0.52:
             return True, f"same place ({distance:.2f} km), title {similarity:.2f}"
-        if distance <= 0.25 and same_dates:
+        if distance <= 0.25 and same_dates and similarity >= 0.8:
             return True, "same coordinates and dates"
         if distance <= 3.0 and same_venue and similarity >= 0.45:
             return True, "same venue, similar title"
@@ -162,6 +165,7 @@ def merge_events(base: EventDraft, other: EventDraft) -> EventDraft:
         zip=zip_code,
         lat=lat,
         lng=lng,
+        attendance_conditions=base.attendance_conditions or other.attendance_conditions,
         confidence=max(base.confidence, other.confidence),
         source_urls=source_urls,
         source_url=source_url,

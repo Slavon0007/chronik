@@ -23,7 +23,8 @@ Extrahiere ausschließlich Veranstaltungen, die im bereitgestellten Seitentext a
 genannt sind. Erfinde keine Termine, Orte oder Preise. Antworte ausschließlich mit JSON
 im Format {"events": [...]}. Jedes Event hat diese Felder:
 title, category, start_date, end_date, opening_hours, venue, address, zip, city,
-description, organizer, website, price.
+description, organizer, website, price, attendance_conditions.
+attendance_conditions: nur explizite Besuchsbedingungen; sonst leer.
 
 Regeln:
 - category ist eine von: markt, reenactment, larp, turnier, cosplay.
@@ -118,6 +119,7 @@ def heuristic_extract(page: PageContent, source: Source) -> EventDraft | None:
         organizer=source.name,
         website=website,
         price=price,
+        attendance_conditions=" ".join(p for p in page.paragraphs if any(k in p.lower() for k in ("anmeldung", "mindestalter", "gewandung", "voranmeldung")))[:1000],
         confidence=min(confidence, 0.72),
     )
 
@@ -178,7 +180,7 @@ def _draft_from_ai(raw: dict, page_url: str, source: Source) -> EventDraft | Non
     end = parse_iso_date(str(raw.get("end_date", ""))) or start
     if end < start:
         end = start
-    if (start - date.today()).days < -2:
+    if end < date.today():
         return None
 
     category = Category.coerce(str(raw.get("category", "")), source.category)
@@ -204,6 +206,7 @@ def _draft_from_ai(raw: dict, page_url: str, source: Source) -> EventDraft | Non
         organizer=str(raw.get("organizer", "")).strip() or source.name,
         website=website,
         price=str(raw.get("price", "")).strip(),
+        attendance_conditions=str(raw.get("attendance_conditions") or "").strip()[:1000],
         confidence=0.86,
         source_urls=[page_url],
     )

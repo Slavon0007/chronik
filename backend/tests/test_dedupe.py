@@ -25,6 +25,12 @@ def make_event(**overrides) -> EventDraft:
 
 
 class DedupeTests(unittest.TestCase):
+    def test_distinct_events_at_same_venue(self):
+        self.assertFalse(is_duplicate(make_event(title="Weihnachtsmarkt"), make_event(title="Schwertkampf Lehrgang"))[0])
+
+    def test_same_title_on_tour_in_different_cities(self):
+        self.assertFalse(is_duplicate(make_event(), make_event(city="Hamburg", lat=53.55, lng=9.99))[0])
+
     def test_normalize_title(self) -> None:
         self.assertEqual(normalize_title("MPS Köln 2027 – Mittelalter!"), "mps koeln mittelalter")
 

@@ -23,7 +23,7 @@ from .extractor import extract_events
 from .geocoder import geocode_events
 from .http import Fetcher
 from .models import EventDraft
-from .scraper import Source, fetch_page, load_sources
+from .scraper import Source, fetch_pages, load_sources
 from .storage import SupabaseStore, write_events_json
 
 LOGGER = logging.getLogger("chronik.pipeline")
@@ -112,17 +112,11 @@ def main(argv: list[str] | None = None) -> int:
 
     for source in selected:
         try:
-            page = fetch_page(source, fetcher, fixture_dir)
-            pages_fetched += 1
-            extracted = extract_events(page, source, settings, allow_ai=settings.use_ai)
-            LOGGER.info(
-                "%-28s %3d chars  %2d events  %s",
-                source.slug,
-                len(page.text),
-                len(extracted),
-                page.title[:60],
-            )
-            drafts.extend(extracted)
+            for page in fetch_pages(source, fetcher, fixture_dir):
+                pages_fetched += 1
+                extracted = extract_events(page, source, settings, allow_ai=settings.use_ai)
+                drafts.extend(extracted)
+                LOGGER.info("%s: %d events from %s", source.slug, len(extracted), page.url)
         except Exception as error:  # noqa: BLE001 - one broken source must not stop the run
             message = f"{source.slug}: {error}"
             errors.append(message)

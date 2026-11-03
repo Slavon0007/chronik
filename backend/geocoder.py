@@ -43,7 +43,7 @@ class Geocoder:
             return None
 
         cached = self._cache.get(cache_key)
-        if cached:
+        if cached and (self.offline or cached.get("source") != "city"):
             return GeocodeResult(
                 lat=float(cached["lat"]),
                 lng=float(cached["lng"]),
@@ -142,7 +142,7 @@ def geocode_events(
     for event in events:
         if event.has_location:
             continue
-        query = event.address or ", ".join(part for part in (event.venue, event.city) if part)
+        query = ", ".join(dict.fromkeys(part for part in (event.address, event.venue, event.zip, event.city) if part))
         if not query and event.city:
             query = event.city
         result = geocoder.geocode(query, city=event.city)
@@ -151,6 +151,7 @@ def geocode_events(
             continue
         event.lat = round(result.lat, 6)
         event.lng = round(result.lng, 6)
+        event.location_precision = "city" if result.source == "city" else "venue"
         if not event.city:
             event.city = result.label.split(",")[0]
         geocoded += 1

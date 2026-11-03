@@ -43,20 +43,21 @@ export default function App() {
   const [focus, setFocus] = useState<{ id: string; token: number } | null>(null)
   const [resetToken, setResetToken] = useState(0)
   const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null)
-  const [catalog, setCatalog] = useState<ChronikEvent[]>(EVENTS)
-  const [dataSource, setDataSource] = useState<'demo' | 'supabase'>('demo')
+  const [catalog, setCatalog] = useState<ChronikEvent[]>(isSupabaseConfigured ? [] : EVENTS)
+  const [dataSource, setDataSource] = useState<'demo' | 'supabase'>(isSupabaseConfigured ? 'supabase' : 'demo')
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
     let cancelled = false
     fetchPublishedEvents()
       .then((liveEvents) => {
-        if (cancelled || liveEvents.length === 0) return
+        if (cancelled) return
         setCatalog(liveEvents)
         setDataSource('supabase')
       })
       .catch((error: unknown) => {
-        console.warn('Chronik: live data unavailable, using demo catalogue.', error)
+        if (!cancelled) setToast({ message: 'Veranstaltungen konnten nicht geladen werden. Bitte erneut laden.', id: Date.now() })
+        console.warn('Chronik: live data unavailable.', error)
       })
     return () => {
       cancelled = true

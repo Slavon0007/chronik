@@ -94,6 +94,8 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave }: 
 
           <p className="detail-description">{event.description}</p>
 
+          <p><strong>Besuchsbedingungen:</strong> {event.attendanceConditions || 'Bitte beim Veranstalter nachfragen.'}</p>
+          {event.locationPrecision !== 'venue' && <p>Ungefähre Position. Bitte die genaue Anfahrt beim Veranstalter prüfen.</p>}
           <dl className="fact-list">
             <div className="fact">
               <dt>
@@ -136,7 +138,7 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave }: 
           </div>
 
           <div className="detail-actions">
-            <button type="button" className="primary-btn" onClick={openRoute}>
+            <button type="button" className="primary-btn" onClick={openRoute} disabled={event.locationPrecision === 'city'}>
               <Navigation size={16} />
               Route planen
             </button>
