@@ -37,7 +37,7 @@ const args = [
   `--define:import.meta.env=${JSON.stringify(publicEnv)}`,
 ]
 
-const result = spawnSync(process.execPath, [esbuildBin, ...args], {
+const result = spawnSync(process.platform === 'win32' ? process.execPath : esbuildBin, process.platform === 'win32' ? [esbuildBin, ...args] : args, {
   cwd: root,
   stdio: 'inherit',
 })
