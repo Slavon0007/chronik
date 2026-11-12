@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { CATEGORY_MAP } from '../data/categories'
 import { formatDateRange, relativeDateLabel } from '../lib/dates'
+import { eventStatusLabel } from '../lib/eventStatus'
 import { formatDistance, routeUrl } from '../lib/geo'
 import type { ChronikEvent } from '../types'
 import { CategoryIcon } from './CategoryIcon'
@@ -28,7 +29,9 @@ type Props = {
 export function EventDetails({ event, distance, saved, onClose, onToggleSave }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const category = CATEGORY_MAP[event.category]
-  const relative = relativeDateLabel(event.start)
+  const status = eventStatusLabel(event.eventStatus)
+  const routeUnavailable = event.eventStatus === 'cancelled' || event.eventStatus === 'postponed'
+  const relative = routeUnavailable ? null : relativeDateLabel(event.start)
 
   useEffect(() => {
     closeRef.current?.focus()
@@ -84,7 +87,8 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave }: 
         </div>
 
         <div className="detail-body">
-          <p className="detail-date">{formatDateRange(event.start, event.end)}</p>
+          {status && <p className="detail-date"><strong>{status}</strong></p>}
+          {!routeUnavailable && <p className="detail-date">{formatDateRange(event.start, event.end)}</p>}
           <h2>{event.title}</h2>
           <p className="detail-place">
             <MapPin size={15} aria-hidden="true" />
@@ -102,8 +106,8 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave }: 
                 <CalendarDays size={15} /> Wann
               </dt>
               <dd>
-                {formatDateRange(event.start, event.end)}
-                <span className="fact__sub">{event.time}</span>
+                {routeUnavailable ? '–' : formatDateRange(event.start, event.end)}
+                {!routeUnavailable && event.time && <span className="fact__sub">{event.time}</span>}
               </dd>
             </div>
             <div className="fact">
@@ -119,7 +123,7 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave }: 
               <dt>
                 <Ticket size={15} /> Eintritt
               </dt>
-              <dd>{event.price}</dd>
+              <dd>{event.price || 'Siehe Veranstalter'}</dd>
             </div>
             <div className="fact">
               <dt>
@@ -138,7 +142,7 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave }: 
           </div>
 
           <div className="detail-actions">
-            <button type="button" className="primary-btn" onClick={openRoute} disabled={event.locationPrecision === 'city'}>
+            <button type="button" className="primary-btn" onClick={openRoute} disabled={routeUnavailable || event.locationPrecision === 'city'}>
               <Navigation size={16} />
               Route planen
             </button>

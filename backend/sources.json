@@ -10,7 +10,7 @@
       "name": "Mittelalterlich Phantasie Spectaculum",
       "url": "https://spectaculum.de/",
       "category": "markt",
-      "max_pages": 1,
+      "max_pages": 16,
       "fixture": "mps.html",
       "notes": "Validated homepage season cards, excluding provisional unlinked dates.",
       "enabled": true,

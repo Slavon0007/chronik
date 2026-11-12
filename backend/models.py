@@ -83,6 +83,7 @@ class EventDraft:
     location_precision: str = "unknown"
     attendance_conditions: str = ""
     source_urls: list[str] = field(default_factory=list)
+    event_status: str = ""
 
     def __post_init__(self) -> None:
         if not self.source_urls and self.source_url:
@@ -151,6 +152,7 @@ class EventDraft:
             "image_url": self.image_url,
             "location_precision": self.location_precision,
             "attendance_conditions": self.attendance_conditions,
+            "event_status": self.event_status,
             "source_url": self.source_url,
             "source_name": self.source_name,
             "source_urls": list(dict.fromkeys(self.source_urls)),
@@ -183,6 +185,7 @@ class EventDraft:
             image_url=str(data.get("image_url", "")),
             location_precision=str(data.get("location_precision", "unknown")),
             attendance_conditions=str(data.get("attendance_conditions", "")),
+            event_status=str(data.get("event_status") or ""),
             source_urls=list(data.get("source_urls") or []),
         )
 

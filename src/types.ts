@@ -29,6 +29,7 @@ export type ChronikEvent = {
   organizer: string
   website: string
   price: string
+  eventStatus?: string
   attendanceConditions?: string
   locationPrecision?: string
   highlight?: boolean

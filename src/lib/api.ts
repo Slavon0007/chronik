@@ -24,6 +24,7 @@ type EventRow = {
   price?: string | null
   source_url?: string | null
   source_name?: string | null
+  event_status?: string | null
   attendance_conditions?: string | null
   location_precision?: string | null
   confidence?: number | string | null
@@ -43,7 +44,7 @@ export async function fetchPublishedEvents(): Promise<ChronikEvent[]> {
   const useDatabase = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY)
 
   const response = await fetch(
-    useDatabase ? `${SUPABASE_URL}/rest/v1/active_events?select=id,title,category,start_date,end_date,opening_hours,venue,address,zip,city,lat,lng,description,organizer,website,price,source_url,source_name,confidence,attendance_conditions,location_precision&order=start_date.asc&limit=1000` : new URL('events.json', document.baseURI).href,
+    useDatabase ? `${SUPABASE_URL}/rest/v1/active_events?select=id,title,category,start_date,end_date,opening_hours,venue,address,zip,city,lat,lng,description,organizer,website,price,source_url,source_name,confidence,attendance_conditions,location_precision,event_status&order=start_date.asc&limit=1000` : new URL('events.json', document.baseURI).href,
     {
       headers: useDatabase ? {
         apikey: SUPABASE_ANON_KEY || '',
@@ -78,11 +79,12 @@ export async function fetchPublishedEvents(): Promise<ChronikEvent[]> {
         lng,
         start: row.start_date,
         end: row.end_date,
-        time: row.opening_hours || '',
+        time: row.opening_hours && !/^\d{4}-\d{2}-\d{2}/.test(row.opening_hours) ? row.opening_hours : '',
         description: row.description || '',
         organizer: row.organizer || 'Siehe Veranstaltungsseite',
         website: row.website || row.source_url || '',
-        price: row.price || 'Siehe Veranstalter',
+        price: row.price || '',
+        eventStatus: row.event_status || '',
         attendanceConditions: row.attendance_conditions || '',
         locationPrecision: row.location_precision || 'unknown',
         highlight: Number(row.confidence || 0) >= 0.85,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -12,8 +13,10 @@ from urllib.parse import urlparse, urldefrag
 from lxml import html as lxml_html
 
 from .config import BACKEND_ROOT, DEFAULT_SOURCES, Settings
-from .http import Fetcher
-from .models import Category, PageContent
+from .http import FetchError, Fetcher
+from .models import Category, EventDraft, PageContent
+
+LOGGER = logging.getLogger(__name__)
 
 SKIP_PHRASES = (
     "cookie",
@@ -86,6 +89,29 @@ def fetch_page(source: Source, fetcher: Fetcher, fixture_dir: Path | None = None
         from urllib.parse import urljoin
         page.crawl_urls = list(dict.fromkeys(urljoin(source.url, href) for href in document.xpath(source.link_selector)))
     return page
+
+
+def enrich_mps_events(events: list[EventDraft], source: Source, fetcher: Fetcher) -> None:
+    from .dates import find_date_range
+    from .parsers import clean, mps_details
+
+    for event in events[:max(0, source.max_pages - 1)]:
+        detail_url = urlparse(event.source_url)
+        if (detail_url.hostname or '').removeprefix('www.') != (urlparse(source.url).hostname or '').removeprefix('www.'):
+            continue
+        if not detail_url.path.startswith('/termine/'):
+            continue
+        try:
+            document = lxml_html.fromstring(fetcher.fetch(event.source_url).text)
+        except (FetchError, ValueError) as error:
+            LOGGER.warning("MPS detail unavailable for %s: %s", event.title, error)
+            continue
+        dates = (find_date_range(clean(heading.text_content()).replace(' + ', ' - '))
+                 for heading in document.xpath('//main//h2'))
+        if any(period and (period.start, period.end) == (event.start_date, event.end_date) for period in dates):
+            for field, value in mps_details(document).items():
+                if value:
+                    setattr(event, field, value)
 
 
 def parse_page(raw_html: str, url: str) -> PageContent:
@@ -176,6 +202,10 @@ def fetch_pages(source: Source, fetcher: Fetcher, fixture_dir: Path | None = Non
             continue
         seen.add(url)
         page = fetch_page(replace(source, url=url), fetcher, fixture_dir)
+        if source.slug == 'mps-spectaculum' and fixture_dir is None:
+            enrich_mps_events(page.structured_events, source, fetcher)
+            yield page
+            return
         yield page
         for href in page.crawl_urls if url in seeds else []:
             if urlparse(href).netloc == urlparse(source.url).netloc and href not in seen and href not in queue:

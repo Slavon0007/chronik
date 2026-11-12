@@ -154,6 +154,7 @@ def merge_events(base: EventDraft, other: EventDraft) -> EventDraft:
     if website == base.source_url and other.website and other.website != other.source_url:
         website = other.website
     organizer = base.organizer or other.organizer
+    status_priority = {"cancelled": 4, "postponed": 3, "rescheduled": 2, "sold_out": 1}
     price = base.price or other.price
     opening_hours = base.opening_hours or other.opening_hours
     venue = base.venue if len(base.venue) >= len(other.venue) else other.venue
@@ -186,6 +187,7 @@ def merge_events(base: EventDraft, other: EventDraft) -> EventDraft:
         lng=location.lng,
         location_precision=location.location_precision,
         attendance_conditions=base.attendance_conditions or other.attendance_conditions,
+        event_status=max((base.event_status, other.event_status), key=lambda status: status_priority.get(status, 0)),
         confidence=max(base.confidence, other.confidence),
         source_urls=source_urls,
         source_url=source_url,

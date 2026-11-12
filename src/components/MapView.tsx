@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import { Castle, Compass, List, LocateFixed, SlidersHorizontal } from 'lucide-react'
 import { CATEGORIES, CATEGORY_MAP } from '../data/categories'
+import { eventStatusLabel } from '../lib/eventStatus'
 import { formatDistance } from '../lib/geo'
 import { formatShortRange } from '../lib/dates'
 import type { CategoryId, ChronikEvent, Place } from '../types'
@@ -184,6 +185,7 @@ export function MapView({
           const popup = document.createElement('div')
           popup.className = 'map-popup'
           popup.style.setProperty('--cat', category.color)
+          const status = eventStatusLabel(event.eventStatus)
           popup.innerHTML = `
             <div class="map-popup__head">
               <span class="map-popup__cat"><span class="map-popup__dot"></span>${escapeHtml(category.shortLabel)}</span>
@@ -191,6 +193,7 @@ export function MapView({
             </div>
             <h3>${escapeHtml(event.title)}</h3>
             <p class="map-popup__meta">${escapeHtml(formatShortRange(event.start, event.end))} · ${escapeHtml(event.city)}</p>
+            ${status ? `<p class="map-popup__meta"><strong>${escapeHtml(status)}</strong></p>` : ''}
             <button type="button" class="map-popup__button">Details ansehen <span aria-hidden="true">→</span></button>
           `
           popup.querySelector('button')?.addEventListener('click', () => {

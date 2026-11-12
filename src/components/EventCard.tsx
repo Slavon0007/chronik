@@ -1,4 +1,5 @@
 import { ArrowUpRight, Heart } from 'lucide-react'
+import { eventStatusLabel } from '../lib/eventStatus'
 import { CATEGORY_MAP } from '../data/categories'
 import { formatDistance } from '../lib/geo'
 import { formatShortRange } from '../lib/dates'
@@ -16,6 +17,7 @@ type Props = {
 
 export function EventCard({ event, distance, saved, onOpen, onToggleSave }: Props) {
   const category = CATEGORY_MAP[event.category]
+  const status = eventStatusLabel(event.eventStatus)
   return (
     <article
       className="event-card"
@@ -45,6 +47,7 @@ export function EventCard({ event, distance, saved, onOpen, onToggleSave }: Prop
           <span className="event-card__title">{event.title}</span>
           <span className="event-card__info">
             <span>{formatShortRange(event.start, event.end)}</span>
+            {status && <strong>{status}</strong>}
             <span className="dot-sep" aria-hidden="true" />
             <span>{event.city}</span>
             {distance !== null && (

@@ -2,6 +2,7 @@
 import json
 import re
 from html import unescape
+from decimal import Decimal, InvalidOperation
 from urllib.parse import urljoin
 from .models import EventDraft, Category
 from .dates import parse_iso_date, find_date_range
@@ -83,6 +84,140 @@ def clean(value):
     return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", unescape(str(value or "")))).strip()
 
 
+
+EVENT_STATUSES = {
+    'EventCancelled': 'cancelled',
+    'EventPostponed': 'postponed',
+    'EventRescheduled': 'rescheduled',
+}
+TIME_RANGE = r'\d{1,2}(?::\d{2})?\s*(?:Uhr\s*)?(?:[-–—]|bis)\s*\d{1,2}(?::\d{2})?\s*Uhr'
+WEEKDAY = r'(?:Mo(?:ntag)?|Di(?:enstag)?|Mi(?:ttwoch)?|Do(?:nnerstag)?|Fr(?:eitag)?|Sa(?:mstag)?|So(?:nntag)?)\.?'
+CONDITION = re.compile(
+    r'\b(?:Mindestalter|Teilnahme\s+ab\s+\d+|ab\s+\d+\s+Jahren|'
+    r'(?:Vor)?Anmeldung\s+(?:ist\s+)?(?:erforderlich|notwendig|Pflicht)|'
+    r'(?:nur\s+)?mit\s+(?:vorheriger\s+)?(?:Vor)?Anmeldung|'
+    r'(?:Gewandung|Kostüm)\s+(?:ist\s+)?(?:Pflicht|erforderlich)|'
+    r'Zuschauer\s+(?:sind\s+)?(?:willkommen|zugelassen|nicht\s+zugelassen)|'
+    r'Frühanreise|Mitbringen\b.{0,120}\bverboten)\b', re.I,
+)
+
+
+def schema_term(value):
+    return str(value or '').rstrip('/').rsplit('/', 1)[-1]
+
+
+def structured_price(item, offers):
+    if item.get('isAccessibleForFree') is True:
+        return 'Eintritt frei'
+    amounts = {}
+    for offer in offers:
+        currency = str(offer.get('priceCurrency') or '').upper()
+        if not re.fullmatch(r'[A-Z]{3}', currency):
+            continue
+        for field in ('price', 'lowPrice', 'highPrice'):
+            try:
+                amount = Decimal(str(offer.get(field)).replace(',', '.'))
+            except InvalidOperation:
+                continue
+            if amount.is_finite() and amount >= 0:
+                amounts.setdefault(currency, set()).add(amount)
+    if len(amounts) != 1:
+        return ''
+    currency, values = next(iter(amounts.items()))
+    low, high = min(values), max(values)
+    label = '€' if currency == 'EUR' else currency
+    first = format(low, '.0f' if low == low.to_integral() else '.2f').replace('.', ',')
+    last = format(high, '.0f' if high == high.to_integral() else '.2f').replace('.', ',')
+    return f'{first}–{last} {label}' if low != high else f'{first} {label}'
+
+
+def announcement_details(lines):
+    lines = list(dict.fromkeys(line for line in map(clean, lines) if 0 < len(line) <= 250))
+    price = []
+    conditions = []
+    daily = []
+    opening = []
+    status = ''
+    for line in lines:
+        if re.search(r'^(?:Status\s*:\s*)?(?:(?:Die Veranstaltung|Das Event)\s+(?:ist|wurde)\s+)?(?:abgesagt|fällt aus)[.!]?$',
+                     line, re.I):
+            status = 'cancelled'
+        elif status != 'cancelled' and re.fullmatch(
+                r'(?:Status\s*:\s*)?(?:(?:Die Veranstaltung|Das Event)\s+(?:ist|wurde)\s+)?'
+                r'verschoben(?:\s*[–-]\s*neuer Termin (?:folgt|offen))?[.!]?', line, re.I):
+            status = 'postponed'
+        elif not status and re.fullmatch(r'(?:Status\s*:\s*)?(?:ausverkauft|alle Tickets (?:sind )?ausverkauft)[.!]?', line, re.I):
+            status = 'sold_out'
+        if re.match(r'^(?:Eintritt(?:spreise?)?|Tageskarte|Teilnahmegebühr|Tickets?|'
+                    r'Erwachsene|Kinder(?:\s+(?:bis|unter|ab)\s+\d+(?:\s+Jahre[n]?)?)?|'
+                    r'Gäste\s+ab\s+\d+\s+Jahre|freier Eintritt|kostenloser Eintritt)\b', line, re.I):
+            if re.search(r'\d+(?:[,.]\d{1,2})?\s*(?:€|EUR\b)|\b(?:kostenlos|frei)\b', line, re.I):
+                price.append(line)
+        if CONDITION.search(line):
+            conditions.extend(sentence for sentence in re.split(r'(?<=[.!?])\s+(?=[A-ZÄÖÜ])', line)
+                              if CONDITION.search(sentence))
+        if re.search(TIME_RANGE, line, re.I):
+            if re.match(rf'^(?:{WEEKDAY}(?=\W|$)|(?:Markt|Öffnungszeiten)\s+{WEEKDAY}(?=\W|$))', line, re.I):
+                daily.append(line)
+            elif re.match(r'^(?:Öffnungszeiten|Marktzeiten|Geöffnet|Täglich)\b', line, re.I):
+                opening.append(line)
+    return {
+        'price': ' · '.join(price[:4]),
+        'opening_hours': ' · '.join(daily or opening),
+        'attendance_conditions': ' '.join(conditions[:4]),
+        'event_status': status,
+    }
+
+
+def detail_lines(document):
+    return [
+        ' '.join(node.xpath('.//text()[not(ancestor::script or ancestor::style)]'))
+        for node in document.xpath(
+            '//main//*[self::p or self::li or self::h2 or self::h3 or self::tr'
+            ' or self::h4 or self::h5]'
+            '[not(ancestor::nav or ancestor::footer or ancestor::header)]'
+        )
+    ]
+
+
+def mps_details(document):
+    details = announcement_details(detail_lines(document))
+    # MPS has separate market and campsite hours, plus ticket tiers by age.
+    hours = []
+    adult_day_prices = []
+    for heading in document.xpath('//*[self::h3 or self::h4][normalize-space()="Öffnungszeiten" or normalize-space()="Preise"]'):
+        for sibling in heading.itersiblings():
+            if sibling.tag in ('h1', 'h2', 'h3', 'h4'):
+                break
+            for table in sibling.xpath('self::table | .//table'):
+                rows = table.xpath('.//tr')
+                if clean(heading.text_content()) == 'Öffnungszeiten':
+                    if not hours:
+                        hours.extend(filter(None, (clean(' '.join(row.itertext())) for row in rows)))
+                    break
+                day_ticket = False
+                for row in rows:
+                    cells = [clean(cell.text_content()) for cell in row.xpath('./td|./th')]
+                    if not cells:
+                        continue
+                    if any('Preis Vorverkauf' in cell for cell in cells):
+                        day_ticket = bool(re.match(
+                            r'Tageskarte|Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag',
+                            cells[0], re.I,
+                        ))
+                    if day_ticket and re.match(r'Gäste ab 15 Jahre', cells[0], re.I):
+                        adult_day_prices.extend(
+                            Decimal(price.replace(',', '.'))
+                            for price in re.findall(r'(\d+(?:,\d{2})?)\s*€', ' '.join(cells[1:]))
+                        )
+    if hours:
+        details['opening_hours'] = ' · '.join(hours)
+    if adult_day_prices:
+        amount = format(min(adult_day_prices).normalize(), 'f').replace('.', ',')
+        details['price'] = f'Tageskarte ab {amount} € (ab 15 Jahren)'
+    return details
+
+
 def parse_organizers(document, url, source):
     events = []
     if source.slug == 'mps-spectaculum':
@@ -139,6 +274,7 @@ def parse_organizers(document, url, source):
                         address=street.group(0) if street else match.group(1),
                         source_name=source.name, source_url=url, website=url,
                         organizer=source.name, description=title, confidence=0.9,
+                        **announcement_details(paragraphs),
                     ))
     if source.slug == 'drachenfest':
         for node in document.xpath('//p'):
@@ -152,12 +288,18 @@ def parse_organizers(document, url, source):
             dates = find_date_range(text)
             if not dates or 'Waldeck' not in text:
                 continue
+            arrival = re.search(
+                rf'\bDie optionalen? Frühanreisen? für das {re.escape(announcement[1])} '
+                rf'{announcement[2]}[^!\n]*', text, re.I,
+            )
+            conditions = arrival.group(0) if arrival else ''
             events.append(EventDraft(
                 title=f'{announcement[1]} {announcement[2]}', category=Category.LARP,
                 start_date=dates.start, end_date=dates.end, city='Waldeck', zip='34513',
                 location_precision='city',
                 venue='LARP-Gelände Waldeck', source_name=source.name, source_url=url, website=url,
-                organizer='Wyvern', description=text, confidence=0.9,
+                organizer='Wyvern', description=text[:arrival.start()].strip() if arrival else text, confidence=0.9,
+                attendance_conditions=conditions,
             ))
     return events
 
@@ -185,7 +327,9 @@ def parse_events(document, url, source):
                 lat=lat, lng=lng, location_precision='venue' if lat else 'unknown',
                 description=f'Anime-, Manga- und Cosplay-Convention: {source.name}.',
                 organizer=source.name, confidence=0.9,
+                **announcement_details(detail_lines(document)),
             ))
+    structured = []
     for script in document.xpath('//script[@type="application/ld+json"]/text()'):
         try:
             data = json.loads(script)
@@ -194,7 +338,7 @@ def parse_events(document, url, source):
         for item in walk(data):
             types = item.get('@type', [])
             types = [types] if isinstance(types, str) else types
-            if 'Event' not in types or 'EventCancelled' in str(item.get('eventStatus', '')):
+            if 'Event' not in (types or []):
                 continue
             start = parse_iso_date(str(item.get('startDate', '')))
             end = parse_iso_date(str(item.get('endDate', ''))) or start
@@ -208,7 +352,8 @@ def parse_events(document, url, source):
             ):
                 continue
             location = item.get('location') or source.location
-            if not isinstance(location, dict):
+            if not isinstance(location, dict) or (not location and
+                    schema_term(item.get('eventStatus')) == 'EventCancelled'):
                 continue
             address = location.get('address') or {}
             if not isinstance(address, dict):
@@ -227,20 +372,36 @@ def parse_events(document, url, source):
             organizer = item.get('organizer') or {}
             if not isinstance(organizer, dict):
                 organizer = {}
-            offers = item.get('offers') or {}
-            if isinstance(offers, list):
-                offers = offers[0] if offers else {}
-            if not isinstance(offers, dict):
-                offers = {}
+            raw_offers = item.get('offers')
+            offers = [offer for offer in walk(raw_offers) if
+                      any(field in offer for field in ('price', 'lowPrice', 'highPrice', 'availability'))]
+            statuses = [schema_term(offer.get('availability')) for offer in offers]
+            event_status = EVENT_STATUSES.get(schema_term(item.get('eventStatus')), '')
+            if not event_status and statuses and all(status == 'SoldOut' for status in statuses):
+                event_status = 'sold_out'
+            description = item.get('description') or ''
+            lines = re.split(r'[\n\r]+|</(?:p|li|div)>|<br\s*/?>', str(description), flags=re.I)
+            details = announcement_details(lines)
+            details['price'] = structured_price(item, offers) or details['price']
+            details['event_status'] = event_status or details['event_status']
+            if not details['opening_hours'] and start == end:
+                first, last = (re.match(r'\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})', str(item.get(key) or ''))
+                               for key in ('startDate', 'endDate'))
+                if first and last and first[1] < last[1]:
+                    details['opening_hours'] = f'{first[1]}–{last[1]} Uhr'
             website = item.get('sameAs')
             if not isinstance(website, str) or not website.startswith(('https://', 'http://')):
                 website = link
-            conditions = f'Mindestalter: {item["typicalAgeRange"]}' if item.get('typicalAgeRange') else ''
+            if item.get('typicalAgeRange'):
+                details['attendance_conditions'] = ' '.join(filter(None, (
+                    f'Altersangabe: {clean(item["typicalAgeRange"])}.',
+                    details['attendance_conditions'],
+                )))
             category = source.category if source.category == Category.LARP else category_for(title, source.category)
             if source.slug == 'eventgilde':
                 badges = document.xpath('//h1/../div/span[contains(@class,"uppercase")]/text()')
                 category = category_for(' '.join(badges), category)
-            events.append(EventDraft(
+            structured.append(EventDraft(
                 title=title, category=category,
                 start_date=start, end_date=end, source_name=source.name, source_url=link,
                 website=website, venue=clean(location.get('name')),
@@ -248,11 +409,15 @@ def parse_events(document, url, source):
                 address=clean(address.get('streetAddress')), lat=lat, lng=lng,
                 location_precision=('city' if source.slug == 'larp-radar' else 'venue') if lat is not None else 'unknown',
                 description=clean(item.get('description'))[:1000], organizer=clean(organizer.get('name')),
-                price=(str(offers['price']) + ' ' + str(offers.get('priceCurrency', ''))) if 'price' in offers else '',
-                attendance_conditions=conditions,
-                opening_hours=' – '.join(str(item.get(k, '')) for k in ('startDate', 'endDate')),
-                confidence=0.9,
+                confidence=0.9, **details,
             ))
+    if len(structured) == 1 and structured[0].source_url.rstrip('/') == url.rstrip('/'):
+        event = structured[0]
+        for field, value in announcement_details(detail_lines(document)).items():
+            if value and (not getattr(event, field) or (field == 'event_status' and value == 'cancelled')
+                          or field == 'opening_hours'):
+                setattr(event, field, value)
+    events.extend(structured)
     if source.slug == 'larpkalender':
         for row in document.xpath('//tr[starts-with(@class,"termindatum")]'):
             cells = row.xpath('./td')
@@ -275,5 +440,6 @@ def parse_events(document, url, source):
                 source_name=source.name, source_url=link, website=link,
                 city=city.name if city else '', zip=zip_code,
                 address=zip_code, description=text, confidence=0.75,
+                **announcement_details([' '.join(line.itertext()) for line in cells[1].xpath('.//p|.//li')]),
             ))
     return events
