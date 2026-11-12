@@ -145,8 +145,6 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave }: 
             <a
               className="secondary-btn"
               href={event.website}
-              target="_blank"
-              rel="noopener noreferrer"
             >
               <ExternalLink size={15} />
               Zur Veranstaltungsseite
