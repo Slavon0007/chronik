@@ -25,6 +25,29 @@ def make_event(**overrides) -> EventDraft:
 
 
 class DedupeTests(unittest.TestCase):
+    def test_drachenfest_postal_and_town_centres_merge(self):
+        a = make_event(title="DrachenFest 2027", city="Waldeck", zip="34513",
+                       lat=51.247531, lng=9.034527, location_precision="city",
+                       category=Category.LARP, source_name="Drachenfest")
+        b = make_event(title=a.title, city="Waldeck, Waldeck",
+                       lat=51.208385, lng=9.064103, location_precision="city",
+                       category=Category.LARP, source_name="Larp Radar")
+        self.assertTrue(is_duplicate(a, b)[0])
+
+    def test_city_estimate_merges_with_nearby_venue_and_official_link(self):
+        a = make_event(title="Historische Weihnacht Friedrichshain", city="Berlin",
+                       lat=52.500617, lng=13.464806, location_precision="city",
+                       website="https://example.org/ronneburg")
+        b = make_event(title="Historische Weihnacht Friedrichshain Berlin 2026", city="Berlin",
+                       lat=52.508, lng=13.457, location_precision="venue",
+                       source_name="EventGilde", source_url="https://example.com/event",
+                       website="https://organizer.example/event")
+        events, merged = deduplicate([a, b])
+        self.assertEqual(merged, 1)
+        self.assertEqual((events[0].lat, events[0].lng, events[0].location_precision),
+                         (b.lat, b.lng, "venue"))
+        self.assertEqual(events[0].website, b.website)
+
     def test_distinct_events_at_same_venue(self):
         self.assertFalse(is_duplicate(make_event(title="Weihnachtsmarkt"), make_event(title="Schwertkampf Lehrgang"))[0])
 

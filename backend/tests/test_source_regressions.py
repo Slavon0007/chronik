@@ -24,6 +24,7 @@ class SourceRegressionTests(unittest.TestCase):
     def test_drachenfest_does_not_use_early_arrival_dates(self):
         doc = html.fromstring('<p>Das DrachenFest 2027 findet vom 27.07. – 01.08.2027 auf dem Larpgelände Waldeck statt. Frühanreise am 25.07.2027.</p>')
         events = parse_events(doc, 'https://example.org', Source('drachenfest', 'DF', 'https://example.org', Category.LARP))
+        self.assertEqual(events[0].zip, '34513')
         self.assertEqual(events[0].start_date, date(2027, 7, 27))
 
     def test_live_adventure_reads_detail_and_does_not_guess_hasenheide_city(self):
@@ -65,4 +66,14 @@ class SourceRegressionTests(unittest.TestCase):
                 result = geocoder.geocode('01683 Altzella')
                 self.assertEqual(result.source, 'city')
                 self.assertEqual(lookup.call_args.args, ('01683',))
+
+    def test_drachenfest_calendar_reads_other_events(self):
+        doc = html.fromstring('''<div>
+            <p>Das Zeit der Legenden 2027 findet vom 15.09. - 19.09.2027 auf dem Larpgelände Waldeck am Edersee statt.</p>
+            <p>Das Zeit der Abenteuer 2027 findet vom 26.05. - 30.05.2027 auf dem Larpgelände Waldeck am Edersee statt.</p>
+        </div>''')
+        events = parse_events(doc, 'https://example.org', Source('drachenfest', 'DF', 'https://example.org', Category.LARP))
+        self.assertEqual([(e.title, e.start_date.month, e.end_date.day) for e in events], [
+            ('Zeit der Legenden 2027', 9, 19), ('Zeit der Abenteuer 2027', 5, 30),
+        ])
 

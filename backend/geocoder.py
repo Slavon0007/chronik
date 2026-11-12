@@ -163,7 +163,10 @@ def geocode_events(
             continue
         event.lat = round(result.lat, 6)
         event.lng = round(result.lng, 6)
-        event.location_precision = "city" if result.source == "city" or (event.address == event.zip and not event.venue) else "venue"
+        if result.source == "city" or (event.address == event.zip and not event.venue):
+            event.location_precision = "city"
+        elif event.location_precision != "city":
+            event.location_precision = "venue"
         if not event.city:
             event.city = result.label.split(",")[0]
         geocoded += 1

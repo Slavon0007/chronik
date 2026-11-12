@@ -143,14 +143,19 @@ def parse_organizers(document, url, source):
     if source.slug == 'drachenfest':
         for node in document.xpath('//p'):
             text = clean(' '.join(node.itertext()))
-            if not re.search(r'Das DrachenFest 20\d{2} findet', text):
+            announcement = re.match(
+                r'Das (DrachenFest|Zeit der Legenden|Zeit der Abenteuer) (20\d{2}) findet\b',
+                text,
+            )
+            if not announcement:
                 continue
             dates = find_date_range(text)
             if not dates or 'Waldeck' not in text:
                 continue
             events.append(EventDraft(
-                title=f'DrachenFest {dates.start.year}', category=Category.LARP,
-                start_date=dates.start, end_date=dates.end, city='Waldeck',
+                title=f'{announcement[1]} {announcement[2]}', category=Category.LARP,
+                start_date=dates.start, end_date=dates.end, city='Waldeck', zip='34513',
+                location_precision='city',
                 venue='LARP-Gelände Waldeck', source_name=source.name, source_url=url, website=url,
                 organizer='Wyvern', description=text, confidence=0.9,
             ))

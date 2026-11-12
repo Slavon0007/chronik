@@ -116,6 +116,20 @@ def is_duplicate(a: EventDraft, b: EventDraft) -> tuple[bool, str]:
         return False, "different cities"
 
     if distance is not None:
+        same_locality = same_city or (
+            bool(a.city and b.city) and
+            a.city.split(",")[0].strip().casefold() == b.city.split(",")[0].strip().casefold()
+        ) or bool(a.zip and a.zip == b.zip)
+        # A postal district centroid can be several kilometres from its town centre.
+        locality_radius = 6 if similarity == 1 and a.location_precision == b.location_precision == "city" else 3
+        if (
+            distance <= locality_radius and same_locality and a.category == b.category
+            and a.source_name != b.source_name
+            and a.start_date == b.start_date and a.end_date == b.end_date
+            and "city" in (a.location_precision, b.location_precision)
+            and similarity >= 0.9
+        ):
+            return True, "same event dates and title with approximate location"
         if distance <= 0.8 and similarity >= 0.52:
             return True, f"same place ({distance:.2f} km), title {similarity:.2f}"
         if distance <= 0.25 and same_dates and similarity >= 0.8:
@@ -137,6 +151,8 @@ def merge_events(base: EventDraft, other: EventDraft) -> EventDraft:
     description = max((base.description, other.description), key=len)
     title = max((base.title, other.title), key=len)
     website = base.website or other.website
+    if website == base.source_url and other.website and other.website != other.source_url:
+        website = other.website
     organizer = base.organizer or other.organizer
     price = base.price or other.price
     opening_hours = base.opening_hours or other.opening_hours
@@ -144,8 +160,11 @@ def merge_events(base: EventDraft, other: EventDraft) -> EventDraft:
     address = base.address if len(base.address) >= len(other.address) else other.address
     city = base.city or other.city
     zip_code = base.zip or other.zip
-    lat = base.lat if base.lat is not None else other.lat
-    lng = base.lng if base.lng is not None else other.lng
+    location = base
+    if other.has_location and (not base.has_location or (
+        other.location_precision == "venue" and base.location_precision != "venue"
+    )):
+        location = other
     source_urls = list(dict.fromkeys([*base.source_urls, *other.source_urls]))
     source_url = base.source_url or other.source_url
 
@@ -163,8 +182,9 @@ def merge_events(base: EventDraft, other: EventDraft) -> EventDraft:
         address=address,
         city=city,
         zip=zip_code,
-        lat=lat,
-        lng=lng,
+        lat=location.lat,
+        lng=location.lng,
+        location_precision=location.location_precision,
         attendance_conditions=base.attendance_conditions or other.attendance_conditions,
         confidence=max(base.confidence, other.confidence),
         source_urls=source_urls,
