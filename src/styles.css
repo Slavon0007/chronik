@@ -2488,6 +2488,7 @@ input[type='range']::-moz-range-thumb {
   }
 
   .side-panel {
+    z-index: 80;
     top: 0;
     right: 0;
     bottom: 0;
