@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  issues: read
   pages: write
   id-token: write
 
@@ -41,11 +42,16 @@ jobs:
           path: .cache
           key: crawler-${{ github.run_id }}
           restore-keys: crawler-
+      - name: Read organizer submissions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHRONIK_REPOSITORY: ${{ github.repository }}
+        run: gh api --paginate --slurp "repos/$CHRONIK_REPOSITORY/issues?state=open&per_page=100" > "$RUNNER_TEMP/chronik-submissions.json"
       - name: Collect real events without AI
         run: |
           pip install -r backend/requirements.txt
           python -m unittest discover -s backend/tests -v
-          python -m backend.pipeline --no-ai --out public/events.json
+          python -m backend.pipeline --no-ai --submissions "$RUNNER_TEMP/chronik-submissions.json" --out public/events.json
 
       - name: Build static PWA
         env:

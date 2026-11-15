@@ -1,0 +1,86 @@
+name: Veranstaltung eintragen
+description: Eine Veranstaltung in Deutschland für die Chronik-Karte melden
+title: "[Veranstaltung] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Die Angaben sind öffentlich. Bitte trage nur Veranstaltungsdaten ein und verwende keine privaten Kontaktdaten.
+        Gültige Einträge erscheinen nach dem nächsten täglichen Update, sofern der Ort gefunden wird.
+        Bearbeite diesen Eintrag bei Änderungen und schließe ihn bei einer Absage.
+  - type: dropdown
+    id: category
+    attributes:
+      label: Kategorie
+      options:
+        - Mittelaltermarkt
+        - Reenactment
+        - LARP
+        - Ritterturnier
+        - Cosplay
+    validations:
+      required: true
+  - type: input
+    id: start
+    attributes:
+      label: Erster Veranstaltungstag
+      placeholder: JJJJ-MM-TT
+    validations:
+      required: true
+  - type: input
+    id: end
+    attributes:
+      label: Letzter Veranstaltungstag
+      description: Bei einem eintägigen Event trage dasselbe Datum wie oben ein.
+      placeholder: JJJJ-MM-TT
+    validations:
+      required: true
+  - type: input
+    id: postal_code
+    attributes:
+      label: Postleitzahl
+      placeholder: Fünfstellige deutsche PLZ
+    validations:
+      required: true
+  - type: input
+    id: city
+    attributes:
+      label: Ort
+    validations:
+      required: true
+  - type: input
+    id: address
+    attributes:
+      label: Veranstaltungsadresse
+      placeholder: Straße und Hausnummer
+    validations:
+      required: true
+  - type: input
+    id: website
+    attributes:
+      label: Veranstaltungsseite
+      description: Öffentlicher Link mit Informationen zu deinem Event.
+      placeholder: https://
+    validations:
+      required: true
+  - type: input
+    id: organizer
+    attributes:
+      label: Veranstalter
+  - type: input
+    id: hours
+    attributes:
+      label: Öffnungszeiten
+  - type: input
+    id: price
+    attributes:
+      label: Eintrittspreis
+  - type: textarea
+    id: conditions
+    attributes:
+      label: Besuchsbedingungen
+      description: Zum Beispiel Anmeldung, Mindestalter oder Gewandung.
+  - type: textarea
+    id: description
+    attributes:
+      label: Kurzbeschreibung

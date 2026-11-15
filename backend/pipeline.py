@@ -25,6 +25,7 @@ from .http import Fetcher
 from .models import EventDraft
 from .scraper import Source, fetch_pages, load_sources
 from .storage import SupabaseStore, write_events_json
+from .submissions import read_submissions
 
 LOGGER = logging.getLogger("chronik.pipeline")
 
@@ -51,6 +52,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--no-geocode", action="store_true", help="Do not call Nominatim (city fallback only).")
     parser.add_argument("--publish", action="store_true", help="Upsert results into Supabase.")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUTPUT, help="Local JSON output path.")
+    parser.add_argument("--submissions", type=Path, help="Import open organizer submissions from GitHub.")
     parser.add_argument("--today", help="Override today's date (YYYY-MM-DD) for tests/demos.")
     parser.add_argument("--verbose", action="store_true")
     return parser.parse_args(argv)
@@ -127,6 +129,11 @@ def main(argv: list[str] | None = None) -> int:
             message = f"{source.slug}: {error}"
             errors.append(message)
             LOGGER.warning("Source failed: %s", message)
+
+    if args.submissions:
+        submissions = read_submissions(args.submissions)
+        source_counts['veranstaltermeldung'] = len(submissions)
+        drafts.extend(submissions)
 
     drafts = [event for event in drafts if event.is_valid]
     drafts = [event for event in drafts if event.end_date >= today]

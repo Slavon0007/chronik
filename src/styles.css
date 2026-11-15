@@ -955,6 +955,12 @@ input[type='range']::-moz-range-thumb {
   font-size: 9px;
 }
 
+.sidebar__submit {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 7px;
+}
+
 .sidebar__fineprint {
   display: flex;
   align-items: center;
