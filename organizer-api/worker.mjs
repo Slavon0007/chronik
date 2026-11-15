@@ -64,11 +64,6 @@ async function readBody(request) {
   }
 }
 
-async function tokenHash(token) {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
-  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
-}
-
 function validId(id) {
   return typeof id === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id)
 }
@@ -89,7 +84,7 @@ export default {
         const after = url.searchParams.get('after') || ''
         if (after && !validId(after)) return respond({ error: 'Ungültiger Cursor.' }, 400)
         const { results } = await env.DB.prepare(
-          'SELECT id, event_json FROM submissions WHERE cancelled = 0 AND end_date >= ? AND id > ? ORDER BY id LIMIT ?',
+          'SELECT id, event_json FROM submissions WHERE end_date >= ? AND id > ? ORDER BY id LIMIT ?',
         ).bind(today, after, FEED_PAGE_SIZE + 1).all()
         const events = results.slice(0, FEED_PAGE_SIZE).map(row => ({ ...JSON.parse(row.event_json), id: row.id }))
         return respond({ events, next: results.length > FEED_PAGE_SIZE ? events.at(-1).id : null })
@@ -112,39 +107,16 @@ export default {
       let event
       try {
         body = await readBody(request)
-        if (!validId(body.id) || typeof body.token !== 'string' || !/^[0-9a-f]{64}$/.test(body.token)) {
-          return respond({ error: 'Ungültiger Bearbeitungslink.' }, 400)
-        }
-        if (body.action === 'create' || body.action === 'update') event = validateEvent(body.event, today)
+        if (!validId(body.id)) return respond({ error: 'Ungültige Eintrags-ID.' }, 400)
+        event = validateEvent(body.event, today)
       } catch (error) {
         return respond({ error: error.message }, 400)
       }
-      const hash = await tokenHash(body.token)
-      if (body.action === 'create') {
-        await env.DB.prepare(
-          'INSERT OR IGNORE INTO submissions (id, token_hash, event_json, end_date) VALUES (?, ?, ?, ?)',
-        ).bind(body.id, hash, JSON.stringify(event), event.end_date).run()
-      }
-      const existing = await env.DB.prepare(
-        'SELECT event_json, cancelled FROM submissions WHERE id = ? AND token_hash = ?',
-      ).bind(body.id, hash).first()
-      if (existing?.cancelled && body.action === 'cancel') return respond({ cancelled: true })
-      if (!existing || existing.cancelled) return respond({ error: 'Eintrag nicht gefunden oder bereits abgesagt.' }, 404)
-      if (body.action === 'create' || body.action === 'read') return respond({ event: JSON.parse(existing.event_json) })
-      if (body.action === 'update') {
-        const result = await env.DB.prepare(
-          'UPDATE submissions SET event_json = ?, end_date = ? WHERE id = ? AND token_hash = ? AND cancelled = 0',
-        ).bind(JSON.stringify(event), event.end_date, body.id, hash).run()
-        if (!result.meta.changes) return respond({ error: 'Der Eintrag wurde bereits abgesagt.' }, 409)
-        return respond({ event })
-      }
-      if (body.action === 'cancel') {
-        await env.DB.prepare(
-          'UPDATE submissions SET cancelled = 1 WHERE id = ? AND token_hash = ?',
-        ).bind(body.id, hash).run()
-        return respond({ cancelled: true })
-      }
-      return respond({ error: 'Unbekannte Aktion.' }, 400)
+
+      await env.DB.prepare(
+        'INSERT INTO submissions (id, event_json, end_date) VALUES (?, ?, ?) ON CONFLICT(id) DO NOTHING',
+      ).bind(body.id, JSON.stringify(event), event.end_date).run()
+      return respond({ saved: true }, 201)
     } catch (error) {
       console.error('Chronik submission service:', error)
       return respond({ error: 'Der Dienst ist gerade nicht erreichbar. Bitte versuche es erneut.' }, 503)
