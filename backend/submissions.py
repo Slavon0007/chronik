@@ -6,7 +6,7 @@ import re
 from datetime import date
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from .models import Category, EventDraft
 
@@ -80,14 +80,15 @@ def read_submissions(path: Path) -> list[EventDraft]:
     return events
 
 
-def fetch_web_submissions(endpoint: str) -> list[EventDraft]:
+def fetch_web_submissions(endpoint: str, user_agent: str) -> list[EventDraft]:
     """Read all active submissions from the form service, before geocoding."""
     feed = endpoint.rstrip("/") + "/events"
     after = ""
     events = []
     while True:
         url = feed + "?" + urlencode({"after": after}) if after else feed
-        with urlopen(url, timeout=20) as response:
+        request = Request(url, headers={"User-Agent": user_agent, "Accept": "application/json"})
+        with urlopen(request, timeout=20) as response:
             page = json.load(response)
         for event in page["events"]:
             source_url = feed + "#" + event["id"]

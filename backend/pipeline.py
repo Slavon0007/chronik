@@ -138,7 +138,7 @@ def main(argv: list[str] | None = None) -> int:
 
     organizer_api = os.environ.get("CHRONIK_ORGANIZER_API_URL", "").strip()
     if organizer_api and not args.offline and not args.sources:
-        web_submissions = fetch_web_submissions(organizer_api)
+        web_submissions = fetch_web_submissions(organizer_api, settings.user_agent)
         source_counts["web_submissions"] = len(web_submissions)
         drafts.extend(web_submissions)
 
