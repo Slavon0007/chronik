@@ -157,11 +157,10 @@
       "enabled": true
     },
     {
-      "slug": "mittelalterkalender",
-      "name": "Mittelalterkalender",
-      "url": "https://mittelalterkalender.info/",
-      "category": "markt",
-      "max_pages": 1,
+      12,
+      "extra_urls": [
+        "https://www.mittelalterkalender.info/mittelaltermarkt/historische-feste-mittelaltermaerkte-und-fantasy-festivals-2027-nach-datum.php"
+      ],
       "enabled": true
     },
     {
