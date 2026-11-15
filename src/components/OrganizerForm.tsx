@@ -73,13 +73,13 @@ export function OrganizerForm() {
   return (
     <>
       <button type="button" className="secondary-btn sidebar__submit" onClick={openForm}>
-        Veranstaltung eintragen
+        Veranstaltung hinzufügen
       </button>
       <dialog ref={dialog} className="organizer-dialog" aria-labelledby="organizer-title"
         onCancel={e => { if (busy) e.preventDefault() }}
       >
         <header>
-          <h2 id="organizer-title">Veranstaltung eintragen</h2>
+          <h2 id="organizer-title">Veranstaltung hinzufügen</h2>
           <button type="button" className="secondary-btn" disabled={busy} onClick={() => dialog.current?.close()}>
             Schließen
           </button>
