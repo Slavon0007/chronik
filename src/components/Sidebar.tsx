@@ -14,6 +14,7 @@ import { searchCities } from '../lib/geo'
 import { dateFilterLabel } from '../lib/dates'
 import type { CategoryId, DateFilterId, Place } from '../types'
 import { CategoryIcon } from './CategoryIcon'
+import { OrganizerForm } from './OrganizerForm'
 
 type Props = {
   selectedCategories: CategoryId[]
@@ -402,14 +403,7 @@ export function Sidebar({
           Karte ansehen
           <span>{totalCount}</span>
         </button>
-        <a
-          className="secondary-btn sidebar__submit"
-          href="https://github.com/Slavon0007/chronik/issues/new?template=veranstaltung.yml"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Veranstaltung eintragen
-        </a>
+        <OrganizerForm />
         <div className="sidebar__fineprint">
           <span className="data-source">
             <span className="status-dot" aria-hidden="true" />

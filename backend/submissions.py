@@ -5,7 +5,8 @@ import logging
 import re
 from datetime import date
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
+from urllib.request import urlopen
 
 from .models import Category, EventDraft
 
@@ -77,3 +78,25 @@ def read_submissions(path: Path) -> list[EventDraft]:
             except (KeyError, ValueError):
                 LOGGER.warning("Skipping invalid event submission #%s", issue.get("number"))
     return events
+
+
+def fetch_web_submissions(endpoint: str) -> list[EventDraft]:
+    """Read all active submissions from the form service, before geocoding."""
+    feed = endpoint.rstrip("/") + "/events"
+    after = ""
+    events = []
+    while True:
+        url = feed + "?" + urlencode({"after": after}) if after else feed
+        with urlopen(url, timeout=20) as response:
+            page = json.load(response)
+        for event in page["events"]:
+            source_url = feed + "#" + event["id"]
+            events.append(EventDraft.from_dict({
+                **event, "source_name": "Veranstaltermeldung", "source_url": source_url,
+            }))
+        cursor = page["next"]
+        if cursor is None:
+            return events
+        if not isinstance(cursor, str) or cursor <= after:
+            raise ValueError("Invalid organizer feed cursor")
+        after = cursor

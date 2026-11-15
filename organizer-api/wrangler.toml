@@ -1,0 +1,16 @@
+name = "chronik-organizer"
+main = "worker.mjs"
+compatibility_date = "2026-11-15"
+
+[vars]
+SITE_ORIGIN = "https://slavon0007.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "chronik-organizer"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[[ratelimits]]
+name = "SUBMISSION_LIMIT"
+namespace_id = "10527"
+simple = { limit = 12, period = 60 }

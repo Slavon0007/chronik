@@ -961,6 +961,54 @@ input[type='range']::-moz-range-thumb {
   margin-top: 7px;
 }
 
+.organizer-dialog {
+  width: min(520px, calc(100% - 24px));
+  max-height: min(780px, calc(100dvh - 24px));
+  padding: clamp(14px, 4vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper-light);
+  color: var(--ink);
+}
+
+.organizer-dialog::backdrop { background: rgb(18 24 18 / 55%); }
+
+.organizer-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.organizer-dialog h2 { margin: 0; font-size: 20px; }
+
+.organizer-dialog fieldset {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.organizer-dialog label { display: grid; gap: 4px; font-weight: 600; }
+
+.organizer-dialog input,
+.organizer-dialog select,
+.organizer-dialog textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.organizer-error { color: var(--rust); }
+
 .sidebar__fineprint {
   display: flex;
   align-items: center;

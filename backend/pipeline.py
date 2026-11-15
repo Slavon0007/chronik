@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -25,7 +26,7 @@ from .http import Fetcher
 from .models import EventDraft
 from .scraper import Source, fetch_pages, load_sources
 from .storage import SupabaseStore, write_events_json
-from .submissions import read_submissions
+from .submissions import read_submissions, fetch_web_submissions
 
 LOGGER = logging.getLogger("chronik.pipeline")
 
@@ -134,6 +135,12 @@ def main(argv: list[str] | None = None) -> int:
         submissions = read_submissions(args.submissions)
         source_counts['veranstaltermeldung'] = len(submissions)
         drafts.extend(submissions)
+
+    organizer_api = os.environ.get("CHRONIK_ORGANIZER_API_URL", "").strip()
+    if organizer_api and not args.offline and not args.sources:
+        web_submissions = fetch_web_submissions(organizer_api)
+        source_counts["web_submissions"] = len(web_submissions)
+        drafts.extend(web_submissions)
 
     drafts = [event for event in drafts if event.is_valid]
     drafts = [event for event in drafts if event.end_date >= today]

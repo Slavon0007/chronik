@@ -48,6 +48,8 @@ jobs:
           CHRONIK_REPOSITORY: ${{ github.repository }}
         run: gh api --paginate --slurp "repos/$CHRONIK_REPOSITORY/issues?state=open&per_page=100" > "$RUNNER_TEMP/chronik-submissions.json"
       - name: Collect real events without AI
+        env:
+          CHRONIK_ORGANIZER_API_URL: ${{ vars.CHRONIK_ORGANIZER_API_URL }}
         run: |
           pip install -r backend/requirements.txt
           python -m unittest discover -s backend/tests -v
@@ -57,6 +59,7 @@ jobs:
         env:
           # Anon key is public by design; RLS protects writes. Set these as
           # repository Variables (Settings → Secrets and variables → Actions).
+          VITE_ORGANIZER_API_URL: ${{ vars.CHRONIK_ORGANIZER_API_URL }}
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
