@@ -23,3 +23,18 @@ Coverage limits: LARP-Kalender currently reads its 50 newest entries. Larp Radar
 Live Adventure redirects to Realms of Mythodea. The detailed event announcements are used instead of the overview because dates can disagree. DrachenFest uses the official date page in its ticket shop, which is linked by its LARP site.
 
 Unconfirmed/starred and cancelled organizer entries are excluded. Burg Satzvey dinner, workshop, seminar and reading entries are excluded. City/ZIP locations are approximate. Category, radius and date filters still apply to the published catalogue.
+
+## Historische Orte
+
+Der Modus **Burgen & Museen** nutzt `public/heritage.json`, einen separaten
+Katalog für Deutschland, Österreich und die Schweiz. Die offenen
+[Wikidata-Daten (CC0)](https://www.wikidata.org/wiki/Wikidata:Licensing)
+liefern Namen, Beschreibungen und Koordinaten. Die Museumssuche nutzt
+Schlagwörter zur Epoche und erfasst daher eine Auswahl. Bei Burgen gehören
+auch Ruinen und Burgställe zum Bestand.
+
+`backend/heritage_curated.json` ergänzt offizielle Besuchsseiten und
+veröffentlichte Öffnungszeiten. Befristete Angaben werden nach ihrem
+Gültigkeitsdatum ausgeblendet. Der Katalog kann mit
+`python -m backend.heritage` aktualisiert werden. Die Website wird aus der
+gespeicherten Fassung gebaut und benötigt dabei keine externe Datenabfrage.

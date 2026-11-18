@@ -2687,3 +2687,60 @@ input[type='range']::-moz-range-thumb {
     scroll-behavior: auto !important;
   }
 }
+
+.map-mode.secondary-btn {
+  position: absolute;
+  z-index: 500;
+  top: 76px;
+  left: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.map-mode[aria-pressed='true'] {
+  color: #fff;
+  background: var(--moss);
+  border-color: var(--moss);
+}
+
+.heritage-search {
+  margin: 0 20px 10px;
+}
+
+.heritage-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  padding: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.heritage-row span {
+  flex: 1;
+  min-width: 0;
+}
+
+.heritage-row small {
+  display: block;
+  color: var(--muted);
+}
+
+.heritage-detail-head .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heritage-hours {
+  white-space: pre-line;
+}
+
+@media (max-width: 900px) {
+  .map-mode.secondary-btn {
+    top: calc(115px + env(safe-area-inset-top));
+    left: 12px;
+  }
+}

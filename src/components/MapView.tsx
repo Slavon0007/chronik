@@ -1,16 +1,23 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import { Castle, Compass, List, LocateFixed, SlidersHorizontal } from 'lucide-react'
+import { HERITAGE_KINDS } from '../data/heritage'
 import { CATEGORIES, CATEGORY_MAP } from '../data/categories'
 import { eventStatusLabel } from '../lib/eventStatus'
 import { formatDistance } from '../lib/geo'
 import { formatShortRange } from '../lib/dates'
-import type { CategoryId, ChronikEvent, Place } from '../types'
+import type { CategoryId, ChronikEvent, HeritageSite, Place } from '../types'
 
 export type MapEvent = ChronikEvent & { distance: number | null }
 
+export type MapSite = HeritageSite & { distance: number | null }
+type MapItem = MapEvent | MapSite
+
 type Props = {
-  events: MapEvent[]
+  events: MapItem[]
+  showHeritage: boolean
+  heritageStatus: 'loading' | 'ready' | 'error'
+  onToggleHeritage: () => void
   place: Place | null
   radius: number
   selectedId: string | null
@@ -29,6 +36,7 @@ const GERMANY_BOUNDS: L.LatLngBoundsExpression = [
   [47.1, 5.6],
   [55.2, 15.3],
 ]
+const DACH_BOUNDS: L.LatLngBoundsExpression = [[45.7, 5.7], [55.2, 17.2]]
 
 /** Lucide path data, inlined so markers can be built as plain Leaflet HTML. */
 const GLYPHS: Record<CategoryId, string> = {
@@ -43,12 +51,18 @@ const GLYPHS: Record<CategoryId, string> = {
     '<path d="M18 11c-1.5 0-2.5.5-3 2"/><path d="M4 6a2 2 0 0 0-2 2v4a5 5 0 0 0 5 5 8 8 0 0 1 5 2 8 8 0 0 1 5-2 5 5 0 0 0 5-5V8a2 2 0 0 0-2-2h-3a8 8 0 0 0-5 2 8 8 0 0 0-5-2z"/><path d="M6 11c1.5 0 2.5.5 3 2"/>',
 }
 
-function markerMarkup(event: ChronikEvent): string {
-  const category = CATEGORY_MAP[event.category]
+const HERITAGE_GLYPHS = {
+  castle: GLYPHS.reenactment,
+  museum: '<path d="m3 10 9-6 9 6H3Zm2 10h14M7 10v10m5-10v10m5-10v10"/>',
+}
+
+function markerMarkup(event: MapItem): string {
+  const category = 'kind' in event ? HERITAGE_KINDS[event.kind] : CATEGORY_MAP[event.category]
+  const glyph = 'kind' in event ? HERITAGE_GLYPHS[event.kind] : GLYPHS[event.category]
   return `<span class="marker" style="--cat:${category.color};--cat-tint:${category.tint}">
     <span class="marker__pulse" aria-hidden="true"></span>
     <span class="marker__body">
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${GLYPHS[event.category]}</svg>
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${glyph}</svg>
     </span>
   </span>`
 }
@@ -63,6 +77,9 @@ function escapeHtml(value: string): string {
 
 export function MapView({
   events,
+  showHeritage,
+  heritageStatus,
+  onToggleHeritage,
   place,
   radius,
   selectedId,
@@ -162,6 +179,7 @@ export function MapView({
     layer.clearLayers()
     markersRef.current.clear()
 
+    const markers: L.Marker[] = []
     for (const event of eventsRef.current) {
       const icon = L.divIcon({
         className: 'marker-hit',
@@ -171,28 +189,32 @@ export function MapView({
         popupAnchor: [0, -19],
       })
 
+      const isSite = 'kind' in event
+      const location = isSite ? event.address || event.country : event.city
+      const label = [event.title, location].filter(Boolean).join(', ')
       const marker = L.marker([event.lat, event.lng], {
         icon,
         title: event.title,
-        alt: `${event.title}, ${event.city}`,
+        alt: label,
         keyboard: true,
         riseOnHover: true,
       })
 
       marker.bindPopup(
         () => {
-          const category = CATEGORY_MAP[event.category]
+          const category = isSite ? HERITAGE_KINDS[event.kind] : CATEGORY_MAP[event.category]
           const popup = document.createElement('div')
           popup.className = 'map-popup'
           popup.style.setProperty('--cat', category.color)
-          const status = eventStatusLabel(event.eventStatus)
+          const status = isSite ? null : eventStatusLabel(event.eventStatus)
+          const meta = isSite ? location : `${formatShortRange(event.start, event.end)} · ${location}`
           popup.innerHTML = `
             <div class="map-popup__head">
               <span class="map-popup__cat"><span class="map-popup__dot"></span>${escapeHtml(category.shortLabel)}</span>
               ${event.distance !== null ? `<span class="map-popup__distance">${formatDistance(event.distance)}</span>` : ''}
             </div>
             <h3>${escapeHtml(event.title)}</h3>
-            <p class="map-popup__meta">${escapeHtml(formatShortRange(event.start, event.end))} · ${escapeHtml(event.city)}</p>
+            <p class="map-popup__meta">${escapeHtml(meta)}</p>
             ${status ? `<p class="map-popup__meta"><strong>${escapeHtml(status)}</strong></p>` : ''}
             <button type="button" class="map-popup__button">Details ansehen <span aria-hidden="true">→</span></button>
           `
@@ -212,10 +234,11 @@ export function MapView({
         },
       )
 
-      marker.addTo(layer)
-      marker.getElement()?.setAttribute('aria-label', `${event.title}, ${event.city}`)
+      marker.on('add', () => marker.getElement()?.setAttribute('aria-label', label))
+      markers.push(marker)
       markersRef.current.set(event.id, marker)
     }
+    layer.addLayers(markers)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [renderSignature])
 
@@ -295,18 +318,20 @@ export function MapView({
           duration: 0.6,
         })
         if (!place && map.getZoom() < 6) map.setZoom(6)
+      } else if (events.length > 0 && showHeritage) {
+        map.fitBounds(DACH_BOUNDS, { padding: [24, 24], animate: true })
       } else if (events.length > 0) {
         map.setView([51.05, 10.35], 6, { animate: true })
       } else if (place) {
         map.flyTo([place.lat, place.lng], 8, { duration: 0.6 })
       } else {
-        map.flyToBounds(GERMANY_BOUNDS, { padding: [30, 30], duration: 0.6 })
+        map.flyToBounds(showHeritage ? DACH_BOUNDS : GERMANY_BOUNDS, { padding: [30, 30], duration: 0.6 })
       }
     }, 240)
 
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventSignature, place?.lat, place?.lng, radius])
+  }, [eventSignature, place?.lat, place?.lng, radius, showHeritage])
 
   // Open a specific event when the user picks it from the list.
   useEffect(() => {
@@ -324,13 +349,17 @@ export function MapView({
     map.closePopup()
   }, [focus])
 
-  const noResults = events.length === 0
-  const statusLabel = hasLocation
-    ? `${events.length} ${events.length === 1 ? 'Fest' : 'Feste'} im Umkreis von ${radius} km`
-    : `${events.length} ${events.length === 1 ? 'Fest' : 'Feste'} in Deutschland`
+  const heritagePending = showHeritage && heritageStatus !== 'ready'
+  const noResults = events.length === 0 && !heritagePending
+  const countLabel = showHeritage ? 'historische Orte' : events.length === 1 ? 'Fest' : 'Feste'
+  const statusLabel = heritagePending
+    ? heritageStatus === 'error' ? 'Historische Orte konnten nicht geladen werden' : 'Historische Orte werden geladen …'
+    : `${events.length} ${countLabel} ${hasLocation
+      ? `im Umkreis von ${radius} km`
+      : showHeritage ? 'in Deutschland, Österreich und der Schweiz' : 'in Deutschland'}`
 
   return (
-    <section className="map-shell" aria-label="Karte der Feste">
+    <section className="map-shell" aria-label={showHeritage ? 'Karte historischer Orte' : 'Karte der Feste'}>
       <div ref={containerRef} className="map" />
 
       <div className="mobile-map-bar">
@@ -353,12 +382,22 @@ export function MapView({
         </div>
       </div>
 
+      <button
+        type="button"
+        className="map-mode secondary-btn"
+        aria-pressed={showHeritage}
+        onClick={onToggleHeritage}
+      >
+        <Castle size={17} />
+        Burgen &amp; Museen
+      </button>
+
       <div className="map-status" role="status" aria-live="polite">
         <span className="map-status__pulse" aria-hidden="true" />
         <div>
           <strong>{statusLabel}</strong>
           <small>
-            {hasLocation ? `Luftlinie ab ${place?.label ?? 'deinem Standort'}` : 'Alle aktiven Termine auf einen Blick'}
+            {hasLocation ? `Luftlinie ab ${place?.label ?? 'deinem Standort'}` : showHeritage ? 'Burgen, Schlösser und Museen' : 'Alle aktiven Termine auf einen Blick'}
           </small>
         </div>
       </div>
@@ -383,7 +422,7 @@ export function MapView({
 
       {!noResults && (
         <div className="map-legend" aria-label="Kategorien">
-          {CATEGORIES.map((category) => (
+          {(showHeritage ? Object.values(HERITAGE_KINDS) : CATEGORIES).map((category) => (
             <span className="map-legend__item" key={category.id}>
               <span className="map-legend__dot" style={{ background: category.color }} aria-hidden="true" />
               {category.shortLabel}
@@ -398,9 +437,9 @@ export function MapView({
             <Castle size={26} />
           </span>
           <p className="eyebrow">Nichts in Sicht</p>
-          <h3>Keine Feste für diese Auswahl</h3>
+          <h3>{showHeritage ? 'Keine historischen Orte für diese Auswahl' : 'Keine Feste für diese Auswahl'}</h3>
           <p>
-            {hasLocation
+            {showHeritage ? 'Vergrößere den Radius oder wähle weitere Arten von Orten.' : hasLocation
               ? 'Vergrößere den Radius, ändere den Zeitraum oder wähle weitere Kategorien — vielleicht wartet etwas weiter draußen.'
               : 'Ändere den Zeitraum oder wähle weitere Kategorien aus.'}
           </p>

@@ -1,5 +1,5 @@
 /* Chronik service worker — app-shell offline support, base-path aware. */
-const VERSION = 'chronik-v3'
+const VERSION = 'chronik-v4'
 const SCOPE = self.registration.scope
 const url = (path) => new URL(path, SCOPE).href
 
@@ -41,6 +41,20 @@ self.addEventListener('fetch', (event) => {
 
   // Never cache map tiles, geocoding or third-party API traffic.
   if (requestUrl.origin !== self.location.origin || requestUrl.pathname.endsWith('/events.json')) return
+
+  if (requestUrl.href === url('heritage.json')) {
+    event.respondWith(
+      fetch(request)
+        .then(async (response) => {
+          if (!response.ok) return (await caches.match(request)) || response
+          const cache = await caches.open(VERSION)
+          await cache.put(request, response.clone())
+          return response
+        })
+        .catch(async () => (await caches.match(request)) || Response.error()),
+    )
+    return
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(

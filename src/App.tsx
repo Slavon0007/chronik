@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
 import { Sidebar } from './components/Sidebar'
-import { MapView, type MapEvent } from './components/MapView'
+import { MapView, type MapEvent, type MapSite } from './components/MapView'
 import { ListPanel } from './components/ListPanel'
 import { EventDetails } from './components/EventDetails'
+import { HeritageDetails, HeritageList } from './components/HeritagePanels'
 import { CATEGORIES, ALL_CATEGORIES } from './data/categories'
+import { HERITAGE_KINDS } from './data/heritage'
 import { CITIES } from './data/cities'
 import { haversineKm, nearestCity } from './lib/geo'
 import { eventOverlapsRange, getDateRange, isEventCurrent, parseDate } from './lib/dates'
 import { fetchPublishedEvents, isSupabaseConfigured } from './lib/api'
-import type { CategoryId, ChronikEvent, DateFilterId, Place } from './types'
+import type { CategoryId, ChronikEvent, DateFilterId, HeritageKind, HeritageSite, Place } from './types'
 
+const ALL_HERITAGE_KINDS = Object.values(HERITAGE_KINDS).map(({ id }) => id)
 const FAVORITES_KEY = 'chronik:favorites'
 
 type InstallPromptEvent = Event & {
@@ -42,6 +45,10 @@ export default function App() {
   const [focus, setFocus] = useState<{ id: string; token: number } | null>(null)
   const [resetToken, setResetToken] = useState(0)
   const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null)
+  const [showHeritage, setShowHeritage] = useState(false)
+  const [heritage, setHeritage] = useState<HeritageSite[] | null>(null)
+  const [heritageKinds, setHeritageKinds] = useState<HeritageKind[]>(ALL_HERITAGE_KINDS)
+  const [heritageFailed, setHeritageFailed] = useState(false)
   const [catalog, setCatalog] = useState<ChronikEvent[]>([])
   const [dataSource, setDataSource] = useState<'static' | 'supabase'>(isSupabaseConfigured ? 'supabase' : 'static')
 
@@ -61,6 +68,25 @@ export default function App() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (!showHeritage || heritage) return
+    const controller = new AbortController()
+    setHeritageFailed(false)
+    fetch(new URL('heritage.json', document.baseURI), { signal: controller.signal, cache: 'no-cache' })
+      .then((response) => {
+        if (!response.ok) throw new Error('Heritage catalogue unavailable')
+        return response.json()
+      })
+      .then(({ places }: { places: HeritageSite[] }) => {
+        if (!Array.isArray(places)) throw new Error('Invalid heritage catalogue')
+        if (!controller.signal.aborted) setHeritage(places)
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setHeritageFailed(true)
+      })
+    return () => controller.abort()
+  }, [showHeritage, heritage])
 
   const now = new Date()
   const range = getDateRange(dateFilter, now)
@@ -105,14 +131,30 @@ export default function App() {
     })
   }, [contextEvents, selectedCategories])
 
-  const selectedEvent = selectedId
+  const sites = useMemo<MapSite[]>(() => {
+    if (!showHeritage || !heritage) return []
+    const nearby = heritage
+      .filter((site) => heritageKinds.includes(site.kind))
+      .map((site) => ({
+        ...site,
+        distance: place ? haversineKm(place.lat, place.lng, site.lat, site.lng) : null,
+      }))
+      .filter((site) => site.distance === null || site.distance <= radius)
+    if (place) nearby.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0))
+    return nearby
+  }, [showHeritage, heritage, heritageKinds, place, radius])
+
+  const selectedSite = showHeritage ? sites.find((site) => site.id === selectedId) : undefined
+
+  const selectedEvent = !showHeritage && selectedId
     ? allWithDistance.find((event) => event.id === selectedId) ?? null
     : null
 
   const activeFilterCount =
     (place ? 1 : 0) +
-    (dateFilter !== 'all' ? 1 : 0) +
-    (selectedCategories.length !== CATEGORIES.length ? 1 : 0) +
+    (!showHeritage && dateFilter !== 'all' ? 1 : 0) +
+    (!showHeritage && selectedCategories.length !== CATEGORIES.length ? 1 : 0) +
+    (showHeritage && heritageKinds.length !== ALL_HERITAGE_KINDS.length ? 1 : 0) +
     (place && radius !== 150 ? 1 : 0)
 
   useEffect(() => {
@@ -215,8 +257,11 @@ export default function App() {
 
   function resetFilters() {
     setPlace(null)
-    setSelectedCategories(ALL_CATEGORIES)
-    setDateFilter('all')
+    if (showHeritage) setHeritageKinds(ALL_HERITAGE_KINDS)
+    else {
+      setSelectedCategories(ALL_CATEGORIES)
+      setDateFilter('all')
+    }
     setRadius(150)
     setSelectedId(null)
     setResetToken((token) => token + 1)
@@ -255,7 +300,12 @@ export default function App() {
         dateFilter={dateFilter}
         place={place}
         radius={radius}
-        totalCount={events.length}
+        totalCount={showHeritage ? sites.length : events.length}
+        showHeritage={showHeritage}
+        heritageKinds={heritageKinds}
+        onToggleHeritageKind={(kind) => setHeritageKinds((current) =>
+          current.includes(kind) ? current.filter((entry) => entry !== kind) : [...current, kind],
+        )}
         locating={locating}
         mobileOpen={filtersOpen}
         canInstall={Boolean(installEvent)}
@@ -283,7 +333,15 @@ export default function App() {
 
       <main className="main">
         <MapView
-          events={events}
+          events={showHeritage ? sites : events}
+          showHeritage={showHeritage}
+          heritageStatus={heritageFailed ? 'error' : heritage ? 'ready' : 'loading'}
+          onToggleHeritage={() => {
+            setShowHeritage((current) => !current)
+            setSelectedId(null)
+            setFocus(null)
+            setListOpen(false)
+          }}
           place={place}
           radius={radius}
           selectedId={selectedId}
@@ -306,7 +364,21 @@ export default function App() {
         />
       </main>
 
-      {listOpen && (
+      {listOpen && showHeritage && (
+        <HeritageList
+          sites={sites}
+          loading={!heritage && !heritageFailed}
+          failed={heritageFailed}
+          onClose={() => setListOpen(false)}
+          onOpen={(id) => openEvent(id, true)}
+        />
+      )}
+
+      {selectedSite && (
+        <HeritageDetails site={selectedSite} onClose={() => setSelectedId(null)} />
+      )}
+
+      {listOpen && !showHeritage && (
         <ListPanel
           events={events}
           savedIds={savedIds}

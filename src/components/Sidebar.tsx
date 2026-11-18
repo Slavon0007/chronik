@@ -8,11 +8,12 @@ import {
   Search,
   X,
 } from 'lucide-react'
+import { HERITAGE_KINDS } from '../data/heritage'
 import { CITIES } from '../data/cities'
 import { CATEGORIES, CATEGORY_MAP } from '../data/categories'
 import { searchCities } from '../lib/geo'
 import { dateFilterLabel } from '../lib/dates'
-import type { CategoryId, DateFilterId, Place } from '../types'
+import type { CategoryId, DateFilterId, HeritageKind, Place } from '../types'
 import { CategoryIcon } from './CategoryIcon'
 import { OrganizerForm } from './OrganizerForm'
 
@@ -23,6 +24,9 @@ type Props = {
   place: Place | null
   radius: number
   totalCount: number
+  showHeritage: boolean
+  heritageKinds: HeritageKind[]
+  onToggleHeritageKind: (kind: HeritageKind) => void
   locating: boolean
   mobileOpen: boolean
   canInstall: boolean
@@ -55,6 +59,9 @@ export function Sidebar({
   place,
   radius,
   totalCount,
+  showHeritage,
+  heritageKinds,
+  onToggleHeritageKind,
   locating,
   mobileOpen,
   canInstall,
@@ -192,7 +199,7 @@ export function Sidebar({
                   onClearPlace()
                 }}
               >
-                <X size={12} /> Ganz Deutschland
+                <X size={12} /> {showHeritage ? 'Ganze DACH-Region' : 'Ganz Deutschland'}
               </button>
             )}
           </div>
@@ -294,7 +301,7 @@ export function Sidebar({
                     {radius} <small>km</small>
                   </>
                 ) : (
-                  <span className="radius-value__all">Ganz Deutschland</span>
+                  <span className="radius-value__all">{showHeritage ? 'DACH-Region' : 'Ganz Deutschland'}</span>
                 )}
               </output>
             </div>
@@ -317,6 +324,22 @@ export function Sidebar({
           </div>
         </section>
 
+        {showHeritage ? (
+          <section className="filter-block" aria-labelledby="heritage-kind-label">
+            <div className="filter-head"><h2 id="heritage-kind-label">Welche Orte?</h2></div>
+            <div className="date-grid">
+              {Object.values(HERITAGE_KINDS).map((kind) => (
+                <button key={kind.id} type="button"
+                  className={`date-option ${heritageKinds.includes(kind.id) ? 'is-active' : ''}`}
+                  aria-pressed={heritageKinds.includes(kind.id)}
+                  onClick={() => onToggleHeritageKind(kind.id)}
+                >
+                  <span>{kind.shortLabel}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : <>
         <section className="filter-block" aria-labelledby="date-label">
           <div className="filter-head">
             <h2 id="date-label">
@@ -380,14 +403,15 @@ export function Sidebar({
             })}
           </div>
         </section>
+        </>}
       </div>
 
       <footer className="sidebar__footer">
         <div className="result-summary">
           <span className="result-summary__number">{totalCount}</span>
           <span className="result-summary__label">
-            {totalCount === 1 ? 'Fest gefunden' : 'Feste gefunden'}
-            {place ? <small>im Umkreis von {radius} km</small> : <small>in ganz Deutschland</small>}
+            {showHeritage ? (totalCount === 1 ? 'Ort gefunden' : 'Orte gefunden') : (totalCount === 1 ? 'Fest gefunden' : 'Feste gefunden')}
+            {place ? <small>im Umkreis von {radius} km</small> : <small>{showHeritage ? 'in der DACH-Region' : 'in ganz Deutschland'}</small>}
           </span>
           <button
             type="button"

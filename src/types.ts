@@ -42,4 +42,21 @@ export type Place = {
   kind: 'city' | 'location'
 }
 
+export type HeritageKind = 'castle' | 'museum'
+
+export type HeritageSite = {
+  id: string
+  kind: HeritageKind
+  title: string
+  country: string
+  address?: string
+  lat: number
+  lng: number
+  description: string
+  hours?: string
+  hoursValidUntil?: string
+  website?: string
+  source: string
+}
+
 export type DateFilterId = 'all' | 'weekend' | 'month' | 'quarter'
