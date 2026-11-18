@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
 import { Sidebar } from './components/Sidebar'
-import { MapView, type MapEvent, type MapSite } from './components/MapView'
+import { MapView, type MapEvent, type MapSite, type MapArtisan } from './components/MapView'
 import { ListPanel } from './components/ListPanel'
 import { EventDetails } from './components/EventDetails'
 import { HeritageDetails, HeritageList } from './components/HeritagePanels'
+import { ArtisanDetails, ArtisanList } from './components/ArtisanPanels'
+import { ArtisanForm } from './components/ArtisanForm'
+import { loadArtisans } from './lib/artisans'
 import { CATEGORIES, ALL_CATEGORIES } from './data/categories'
 import { HERITAGE_KINDS } from './data/heritage'
 import { CITIES } from './data/cities'
@@ -12,7 +15,7 @@ import { haversineKm, nearestCity } from './lib/geo'
 import { eventOverlapsRange, getDateRange, isEventCurrent, parseDate } from './lib/dates'
 import { fetchPublishedEvents, isSupabaseConfigured } from './lib/api'
 import { linkedEventId, setLinkedEventId } from './lib/eventLink'
-import type { CategoryId, ChronikEvent, DateFilterId, HeritageKind, HeritageSite, Place } from './types'
+import type { Artisan, CategoryId, ChronikEvent, DateFilterId, HeritageSite, HeritageKind, MapMode, Place } from './types'
 
 const ALL_HERITAGE_KINDS = Object.values(HERITAGE_KINDS).map(({ id }) => id)
 const FAVORITES_KEY = 'chronik:favorites'
@@ -46,7 +49,11 @@ export default function App() {
   const [focus, setFocus] = useState<{ id: string; token: number } | null>(null)
   const [resetToken, setResetToken] = useState(0)
   const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null)
-  const [showHeritage, setShowHeritage] = useState(false)
+  const [mode, setMode] = useState<MapMode>('events')
+  const showHeritage = mode === 'heritage'
+  const showArtisans = mode === 'artisans'
+  const [artisans, setArtisans] = useState<Artisan[]>([])
+  const [artisanStatus, setArtisanStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [heritage, setHeritage] = useState<HeritageSite[] | null>(null)
   const [heritageKinds, setHeritageKinds] = useState<HeritageKind[]>(ALL_HERITAGE_KINDS)
   const [heritageFailed, setHeritageFailed] = useState(false)
@@ -94,6 +101,20 @@ export default function App() {
       })
     return () => controller.abort()
   }, [showHeritage, heritage])
+
+  useEffect(() => {
+    if (!showArtisans) return
+    const controller = new AbortController()
+    setArtisanStatus('loading')
+    loadArtisans(controller.signal).then((profiles) => {
+      if (controller.signal.aborted) return
+      setArtisans(current => [...new Map([...profiles, ...current].map(profile => [profile.id, profile])).values()])
+      setArtisanStatus('ready')
+    }).catch(() => {
+      if (!controller.signal.aborted) setArtisanStatus('error')
+    })
+    return () => controller.abort()
+  }, [showArtisans])
 
   const now = new Date()
   const range = getDateRange(dateFilter, now)
@@ -151,16 +172,26 @@ export default function App() {
     return nearby
   }, [showHeritage, heritage, heritageKinds, place, radius])
 
+  const artisanPoints = useMemo<MapArtisan[]>(() => {
+    if (!showArtisans) return []
+    return artisans.map(profile => ({
+      ...profile,
+      distance: place ? haversineKm(place.lat, place.lng, profile.lat, profile.lng) : null,
+    })).filter(profile => profile.distance === null || profile.distance <= radius)
+      .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0) || a.title.localeCompare(b.title, 'de'))
+  }, [artisans, place, radius, showArtisans])
+  const selectedArtisan = showArtisans ? artisans.find(profile => profile.id === selectedId) : undefined
+
   const selectedSite = showHeritage ? sites.find((site) => site.id === selectedId) : undefined
 
-  const selectedEvent = !showHeritage && selectedId
+  const selectedEvent = mode === 'events' && selectedId
     ? allWithDistance.find((event) => event.id === selectedId) ?? null
     : null
 
   const activeFilterCount =
     (place ? 1 : 0) +
-    (!showHeritage && dateFilter !== 'all' ? 1 : 0) +
-    (!showHeritage && selectedCategories.length !== CATEGORIES.length ? 1 : 0) +
+    (mode === 'events' && dateFilter !== 'all' ? 1 : 0) +
+    (mode === 'events' && selectedCategories.length !== CATEGORIES.length ? 1 : 0) +
     (showHeritage && heritageKinds.length !== ALL_HERITAGE_KINDS.length ? 1 : 0) +
     (place && radius !== 150 ? 1 : 0)
 
@@ -209,9 +240,9 @@ export default function App() {
     setToast({ message, id: Date.now() })
   }
 
-  function changeMapMode(next: boolean) {
-    if (next === showHeritage) return
-    setShowHeritage(next)
+  function changeMapMode(next: MapMode) {
+    if (next === mode) return
+    setMode(next)
     closeDetails()
     setFocus(null)
     setListOpen(false)
@@ -219,11 +250,11 @@ export default function App() {
 
   function selectEventCategories(categories: CategoryId[]) {
     setSelectedCategories(categories)
-    changeMapMode(false)
+    changeMapMode('events')
   }
 
   function toggleCategory(id: CategoryId) {
-    if (showHeritage) {
+    if (mode !== 'events') {
       selectEventCategories([id])
       return
     }
@@ -282,7 +313,7 @@ export default function App() {
   function resetFilters() {
     setPlace(null)
     if (showHeritage) setHeritageKinds(ALL_HERITAGE_KINDS)
-    else {
+    else if (mode === 'events') {
       setSelectedCategories(ALL_CATEGORIES)
       setDateFilter('all')
     }
@@ -307,9 +338,18 @@ export default function App() {
 
   function openEvent(id: string, focusMap = false) {
     setSelectedId(id)
-    setLinkedEventId(showHeritage ? null : id)
+    setLinkedEventId(mode === 'events' ? id : null)
     setListOpen(false)
     if (focusMap) setFocus({ id, token: Date.now() })
+  }
+
+  function addArtisan(profile: Artisan) {
+    setArtisans(current => [...current.filter(existing => existing.id !== profile.id), profile])
+    setArtisanStatus('ready')
+    // Centre the map on the new listing even if a radius filter was active.
+    setPlace(null)
+    openEvent(profile.id, true)
+    notify('Eintrag veröffentlicht.')
   }
 
   async function installApp() {
@@ -330,8 +370,9 @@ export default function App() {
         dateFilter={dateFilter}
         place={place}
         radius={radius}
-        totalCount={showHeritage ? sites.length : events.length}
+        totalCount={showArtisans ? artisanPoints.length : showHeritage ? sites.length : events.length}
         showHeritage={showHeritage}
+        showArtisans={showArtisans}
         heritageKinds={heritageKinds}
         onToggleHeritageKind={(kind) => setHeritageKinds((current) =>
           current.includes(kind) ? current.filter((entry) => entry !== kind) : [...current, kind],
@@ -343,7 +384,7 @@ export default function App() {
         resetToken={resetToken}
         onToggleCategory={toggleCategory}
         onToggleAllCategories={() => selectEventCategories(
-          !showHeritage && selectedCategories.length === ALL_CATEGORIES.length ? [] : ALL_CATEGORIES,
+          mode === 'events' && selectedCategories.length === ALL_CATEGORIES.length ? [] : ALL_CATEGORIES,
         )}
         onDateFilter={setDateFilter}
         onPlace={choosePlace}
@@ -366,8 +407,10 @@ export default function App() {
 
       <main className="main">
         <MapView
-          events={showHeritage ? sites : events}
-          showHeritage={showHeritage}
+          events={showArtisans ? artisanPoints : showHeritage ? sites : events}
+          mode={mode}
+          artisanStatus={artisanStatus}
+          artisanAction={showArtisans ? <ArtisanForm onSaved={addArtisan} /> : undefined}
           heritageStatus={heritageFailed ? 'error' : heritage ? 'ready' : 'loading'}
           onChangeMapMode={changeMapMode}
           place={place}
@@ -406,7 +449,19 @@ export default function App() {
         <HeritageDetails site={selectedSite} onClose={closeDetails} />
       )}
 
-      {listOpen && !showHeritage && (
+      {listOpen && showArtisans && (
+        <ArtisanList artisans={artisanPoints} status={artisanStatus} onClose={() => setListOpen(false)}
+          onOpen={(id) => openEvent(id, true)} />
+      )}
+
+      {selectedArtisan && (
+        <ArtisanDetails profile={{
+          ...selectedArtisan,
+          distance: place ? haversineKm(place.lat, place.lng, selectedArtisan.lat, selectedArtisan.lng) : null,
+        }} onClose={closeDetails} />
+      )}
+
+      {listOpen && mode === 'events' && (
         <ListPanel
           events={events}
           savedIds={savedIds}

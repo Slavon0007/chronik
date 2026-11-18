@@ -68,6 +68,57 @@ function validId(id) {
   return typeof id === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id)
 }
 
+const ARTISAN_TRADES = new Set(['schmiede', 'leder', 'schmuck', 'textil', 'keramik', 'holz', 'sonstiges'])
+const ARTISAN_LIMITS = { title: 120, trade: 20, kind: 12, cityId: 16, website: 500, description: 500 }
+
+function artisanText(input, key, limit) {
+  const value = input[key] ?? ''
+  if (typeof value !== 'string' || value.length > limit) throw Error('Mindestens ein Feld ist zu lang oder ungültig.')
+  return value.trim()
+}
+
+export function validateArtisan(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw Error('Ungültige Daten.')
+  const artisan = Object.fromEntries(Object.entries(ARTISAN_LIMITS).map(([key, limit]) => [key, artisanText(input, key, limit)]))
+  if (artisan.title.length < 3 || !ARTISAN_TRADES.has(artisan.trade) || !['workshop', 'online'].includes(artisan.kind) ||
+      !/^[a-f0-9]{16}$/.test(artisan.cityId)) {
+    throw Error('Bitte gib einen Namen ein und wähle ein Handwerk und einen Ort aus.')
+  }
+  let website
+  try { website = new URL(artisan.website) } catch { throw Error('Bitte gib einen gültigen Link zu deinem Shop oder Profil ein.') }
+  if (!['http:', 'https:'].includes(website.protocol) || !website.hostname.includes('.') ||
+      website.username || website.password || /[\s\\]/.test(artisan.website)) {
+    throw Error('Bitte gib einen öffentlichen Link mit https:// oder http:// ein.')
+  }
+  if (artisan.kind === 'workshop') {
+    artisan.address = artisanText(input, 'address', 200)
+    artisan.hours = artisanText(input, 'hours', 200)
+    if (!artisan.address || !Number.isFinite(input.lat) || !Number.isFinite(input.lng)) {
+      throw Error('Bitte gib die öffentliche Adresse ein und markiere sie auf der Karte.')
+    }
+    artisan.lat = input.lat
+    artisan.lng = input.lng
+  }
+  return artisan
+}
+
+async function resolveArtisan(artisan, env, id) {
+  const base = env.SITE_BASE_URL || new URL('/chronik/', env.SITE_ORIGIN).href
+  const response = await fetch(new URL('artisan-cities/' + artisan.cityId.slice(0, 2) + '.json', base))
+  if (!response.ok) throw Error('Ortsverzeichnis nicht erreichbar.')
+  const city = (await response.json())[artisan.cityId]
+  if (!city) return null
+  const [name, country, latitude, longitude] = city
+  const { cityId, ...profile } = artisan
+  if (profile.kind === 'online') {
+    profile.lat = latitude
+    profile.lng = longitude
+  } else if (Math.abs(profile.lat - latitude) > 0.2 || Math.abs(profile.lng - longitude) > 0.31) {
+    return null
+  }
+  return { ...profile, id, city: name, country }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
@@ -80,6 +131,15 @@ export default {
     }).format(new Date())
 
     try {
+      if (request.method === 'GET' && url.pathname === '/artisans') {
+        const after = url.searchParams.get('after') || ''
+        if (after && !validId(after)) return respond({ error: 'Ungültiger Cursor.' }, 400)
+        const { results } = await env.DB.prepare(
+          'SELECT id, profile_json FROM artisans WHERE id > ? ORDER BY id LIMIT ?',
+        ).bind(after, FEED_PAGE_SIZE + 1).all()
+        const artisans = results.slice(0, FEED_PAGE_SIZE).map(row => JSON.parse(row.profile_json))
+        return respond({ artisans, next: results.length > FEED_PAGE_SIZE ? results[FEED_PAGE_SIZE - 1].id : null })
+      }
       if (request.method === 'GET' && url.pathname === '/events') {
         const after = url.searchParams.get('after') || ''
         if (after && !validId(after)) return respond({ error: 'Ungültiger Cursor.' }, 400)
@@ -89,7 +149,7 @@ export default {
         const events = results.slice(0, FEED_PAGE_SIZE).map(row => ({ ...JSON.parse(row.event_json), id: row.id }))
         return respond({ events, next: results.length > FEED_PAGE_SIZE ? events.at(-1).id : null })
       }
-      if (url.pathname !== '/submissions') return respond({ error: 'Nicht gefunden.' }, 404)
+      if (!['/submissions', '/artisans'].includes(url.pathname)) return respond({ error: 'Nicht gefunden.' }, 404)
       if (!allowedOrigin) return respond({ error: 'Anfrage nicht erlaubt.' }, 403)
       if (request.method === 'OPTIONS') {
         return new Response(null, { status: 204, headers: {
@@ -102,6 +162,27 @@ export default {
         key: request.headers.get('CF-Connecting-IP') || 'unknown',
       })
       if (!success) return respond({ error: 'Zu viele Anfragen. Bitte warte eine Minute.' }, 429)
+
+      if (url.pathname === '/artisans') {
+        let body
+        let artisan
+        try {
+          body = await readBody(request)
+          if (!validId(body.id)) throw Error('Ungültige Eintrags-ID.')
+          artisan = validateArtisan(body.artisan)
+        } catch (error) {
+          return respond({ error: error.message }, 400)
+        }
+
+        const profile = await resolveArtisan(artisan, env, body.id)
+        if (!profile) return respond({ error: 'Bitte prüfe den Ort und den Kartenpunkt.' }, 400)
+
+        await env.DB.prepare(
+          'INSERT INTO artisans (id, profile_json) VALUES (?, ?) ON CONFLICT(id) DO NOTHING',
+        ).bind(body.id, JSON.stringify(profile)).run()
+        const row = await env.DB.prepare('SELECT profile_json FROM artisans WHERE id = ?').bind(body.id).first()
+        return respond({ artisan: JSON.parse(row.profile_json) }, 201)
+      }
 
       let body
       let event

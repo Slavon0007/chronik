@@ -60,3 +60,22 @@ export type HeritageSite = {
 }
 
 export type DateFilterId = 'all' | 'weekend' | 'month' | 'quarter'
+
+export type MapMode = 'events' | 'heritage' | 'artisans'
+
+export type Artisan = {
+  id: string
+  title: string
+  kind: 'online' | 'workshop'
+  trade: keyof typeof import('./lib/artisans').ARTISAN_TRADES
+  city: string
+  country: string
+  lat: number
+  lng: number
+  address?: string
+  hours?: string
+  website: string
+  description: string
+}
+
+export type ArtisanCity = [id: string, name: string, region: string, country: string, postcodes: string[], lat: number, lng: number]

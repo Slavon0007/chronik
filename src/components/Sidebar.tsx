@@ -25,6 +25,7 @@ type Props = {
   radius: number
   totalCount: number
   showHeritage: boolean
+  showArtisans: boolean
   heritageKinds: HeritageKind[]
   onToggleHeritageKind: (kind: HeritageKind) => void
   locating: boolean
@@ -61,6 +62,7 @@ export function Sidebar({
   radius,
   totalCount,
   showHeritage,
+  showArtisans,
   heritageKinds,
   onToggleHeritageKind,
   locating,
@@ -137,6 +139,7 @@ export function Sidebar({
     }
   }
 
+  const onlyEvents = !showHeritage && !showArtisans
   const allCategories = selectedCategories.length === CATEGORIES.length
 
   return (
@@ -191,7 +194,7 @@ export function Sidebar({
                   onClearPlace()
                 }}
               >
-                <X size={12} /> {showHeritage ? 'Ganze DACH-Region' : 'Ganz Deutschland'}
+                <X size={12} /> {!onlyEvents ? 'Ganze DACH-Region' : 'Ganz Deutschland'}
               </button>
             )}
           </div>
@@ -293,7 +296,7 @@ export function Sidebar({
                     {radius} <small>km</small>
                   </>
                 ) : (
-                  <span className="radius-value__all">{showHeritage ? 'DACH-Region' : 'Ganz Deutschland'}</span>
+                  <span className="radius-value__all">{!onlyEvents ? 'DACH-Region' : 'Ganz Deutschland'}</span>
                 )}
               </output>
             </div>
@@ -331,7 +334,7 @@ export function Sidebar({
               ))}
             </div>
           </section>
-        ) : (
+        ) : onlyEvents && (
           <section className="filter-block" aria-labelledby="date-label">
             <div className="filter-head">
               <h2 id="date-label">
@@ -358,25 +361,25 @@ export function Sidebar({
 
         <section className="filter-block" aria-labelledby="category-label">
           <div className="filter-head">
-            <h2 id="category-label">{showHeritage ? 'Veranstaltungen' : 'Was?'}</h2>
+            <h2 id="category-label">{!onlyEvents ? 'Veranstaltungen' : 'Was?'}</h2>
             <button
               type="button"
               className="text-btn"
               onClick={onToggleAllCategories}
             >
-              {showHeritage ? 'Alle anzeigen' : allCategories ? 'Alle abwählen' : 'Alle wählen'}
+              {!onlyEvents ? 'Alle anzeigen' : allCategories ? 'Alle abwählen' : 'Alle wählen'}
             </button>
           </div>
           <div className="category-grid">
             {CATEGORIES.map((category) => {
-              const active = !showHeritage && selectedCategories.includes(category.id)
+              const active = onlyEvents && selectedCategories.includes(category.id)
               const count = categoryCounts[category.id] ?? 0
               return (
                 <button
                   key={category.id}
                   type="button"
-                  role={showHeritage ? undefined : 'checkbox'}
-                  aria-checked={showHeritage ? undefined : active}
+                  role={onlyEvents ? 'checkbox' : undefined}
+                  aria-checked={onlyEvents ? active : undefined}
                   className={`category-tile ${active ? 'is-active' : ''}`}
                   style={
                     {
@@ -402,8 +405,8 @@ export function Sidebar({
         <div className="result-summary">
           <span className="result-summary__number">{totalCount}</span>
           <span className="result-summary__label">
-            {showHeritage ? (totalCount === 1 ? 'Ort gefunden' : 'Orte gefunden') : (totalCount === 1 ? 'Fest gefunden' : 'Feste gefunden')}
-            {place ? <small>im Umkreis von {radius} km</small> : <small>{showHeritage ? 'in der DACH-Region' : 'in ganz Deutschland'}</small>}
+            {!onlyEvents ? (totalCount === 1 ? 'Eintrag gefunden' : 'Einträge gefunden') : (totalCount === 1 ? 'Fest gefunden' : 'Feste gefunden')}
+            {place ? <small>im Umkreis von {radius} km</small> : <small>{!onlyEvents ? 'in der DACH-Region' : 'in ganz Deutschland'}</small>}
           </span>
           <button
             type="button"

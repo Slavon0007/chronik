@@ -6,6 +6,7 @@
 import { cp, readFile, rm, writeFile } from 'node:fs/promises'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
+import { buildArtisanCities } from './build-artisan-cities.mjs'
 
 const root = process.cwd()
 const dist = path.join(root, 'dist')
@@ -45,6 +46,7 @@ const result = spawnSync(process.platform === 'win32' ? process.execPath : esbui
 if (result.status !== 0) process.exit(result.status ?? 1)
 
 await cp(path.join(root, 'public'), dist, { recursive: true })
+await buildArtisanCities(dist)
 
 const meta = JSON.parse(await readFile(path.join(dist, 'meta.json'), 'utf8'))
 const outputs = Object.keys(meta.outputs ?? {})

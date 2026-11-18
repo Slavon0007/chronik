@@ -49,3 +49,13 @@ veröffentlichte Öffnungszeiten. Befristete Angaben werden nach ihrem
 Gültigkeitsdatum ausgeblendet. Der Katalog kann mit
 `python -m backend.heritage` aktualisiert werden. Die Website wird aus der
 gespeicherten Fassung gebaut und benötigt dabei keine externe Datenabfrage.
+
+## Handwerk
+
+Das Ortsverzeichnis enthält Postorte aus den GeoNames-Exporten
+[DE](https://download.geonames.org/export/zip/DE.zip),
+[AT](https://download.geonames.org/export/zip/AT.zip) und
+[CH](https://download.geonames.org/export/zip/CH.zip), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Beim Build werden die Ortseinträge für die Suche gruppiert. Für Online-Shops
+wird der bekannte Stadtmittelpunkt oder ein mittlerer PLZ-Punkt angezeigt.
+Werkstattstandorte werden im Formular ausgewählt.

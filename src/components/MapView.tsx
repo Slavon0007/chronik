@@ -1,23 +1,28 @@
 import { useEffect, useRef } from 'react'
+import type { ReactNode } from 'react'
 import L from 'leaflet'
-import { Castle, Compass, List, LocateFixed, SlidersHorizontal } from 'lucide-react'
+import { Castle, Compass, Hammer, List, LocateFixed, SlidersHorizontal } from 'lucide-react'
+import { ARTISAN_MODES, ARTISAN_TRADES } from '../lib/artisans'
 import { HERITAGE_KINDS } from '../data/heritage'
 import { CATEGORIES, CATEGORY_MAP } from '../data/categories'
 import { eventStatusLabel } from '../lib/eventStatus'
 import { formatDistance } from '../lib/geo'
 import { formatShortRange } from '../lib/dates'
-import type { CategoryId, ChronikEvent, HeritageSite, Place } from '../types'
+import type { Artisan, CategoryId, ChronikEvent, HeritageSite, MapMode, Place } from '../types'
 
 export type MapEvent = ChronikEvent & { distance: number | null }
 
 export type MapSite = HeritageSite & { distance: number | null }
-type MapItem = MapEvent | MapSite
+export type MapArtisan = Artisan & { distance: number | null }
+type MapItem = MapEvent | MapSite | MapArtisan
 
 type Props = {
   events: MapItem[]
-  showHeritage: boolean
+  mode: MapMode
+  artisanStatus: 'loading' | 'ready' | 'error'
+  artisanAction?: ReactNode
   heritageStatus: 'loading' | 'ready' | 'error'
-  onChangeMapMode: (showHeritage: boolean) => void
+  onChangeMapMode: (mode: MapMode) => void
   place: Place | null
   radius: number
   selectedId: string | null
@@ -57,8 +62,10 @@ const HERITAGE_GLYPHS = {
 }
 
 function markerMarkup(event: MapItem): string {
-  const category = 'kind' in event ? HERITAGE_KINDS[event.kind] : CATEGORY_MAP[event.category]
-  const glyph = 'kind' in event ? HERITAGE_GLYPHS[event.kind] : GLYPHS[event.category]
+  const category = 'trade' in event ? ARTISAN_MODES[event.kind]
+    : 'kind' in event ? HERITAGE_KINDS[event.kind] : CATEGORY_MAP[event.category]
+  const glyph = 'trade' in event ? '<path d="m3 21 9-9m1-9 8 8-4 4-8-8 4-4Z"/>'
+    : 'kind' in event ? HERITAGE_GLYPHS[event.kind] : GLYPHS[event.category]
   return `<span class="marker" style="--cat:${category.color};--cat-tint:${category.tint}">
     <span class="marker__pulse" aria-hidden="true"></span>
     <span class="marker__body">
@@ -77,7 +84,9 @@ function escapeHtml(value: string): string {
 
 export function MapView({
   events,
-  showHeritage,
+  mode,
+  artisanStatus,
+  artisanAction,
   heritageStatus,
   onChangeMapMode,
   place,
@@ -93,6 +102,8 @@ export function MapView({
   onReset,
   onWidenRadius,
 }: Props) {
+  const showHeritage = mode === 'heritage'
+  const showArtisans = mode === 'artisans'
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const markerLayerRef = useRef<L.MarkerClusterGroup | null>(null)
@@ -140,8 +151,7 @@ export function MapView({
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
       zoomToBoundsOnClick: true,
-      disableClusteringAtZoom: 10,
-      maxClusterRadius: (zoom) => (zoom < 7 ? 46 : zoom < 9 ? 38 : 30),
+      maxClusterRadius: (zoom) => (zoom < 7 ? 46 : zoom < 9 ? 38 : zoom < 10 ? 30 : 1),
       iconCreateFunction: (cluster) => {
         const count = cluster.getChildCount()
         return L.divIcon({
@@ -190,7 +200,8 @@ export function MapView({
         popupAnchor: [0, -19],
       })
 
-      const isSite = 'kind' in event
+      const isArtisan = 'trade' in event
+      const isSite = !isArtisan && 'kind' in event
       const location = isSite ? event.address || event.country : event.city
       const label = [event.title, location].filter(Boolean).join(', ')
       const marker = L.marker([event.lat, event.lng], {
@@ -203,12 +214,14 @@ export function MapView({
 
       marker.bindPopup(
         () => {
-          const category = isSite ? HERITAGE_KINDS[event.kind] : CATEGORY_MAP[event.category]
+          const category = 'category' in event ? CATEGORY_MAP[event.category]
+            : 'trade' in event ? ARTISAN_MODES[event.kind] : HERITAGE_KINDS[event.kind]
           const popup = document.createElement('div')
           popup.className = 'map-popup'
           popup.style.setProperty('--cat', category.color)
-          const status = isSite ? null : eventStatusLabel(event.eventStatus)
-          const meta = isSite ? location : `${formatShortRange(event.start, event.end)} · ${location}`
+          const status = 'category' in event ? eventStatusLabel(event.eventStatus) : null
+          const meta = 'category' in event ? `${formatShortRange(event.start, event.end)} · ${location}`
+            : 'trade' in event ? `${ARTISAN_TRADES[event.trade]} · ${location}` : location
           popup.innerHTML = `
             <div class="map-popup__head">
               <span class="map-popup__cat"><span class="map-popup__dot"></span>${escapeHtml(category.shortLabel)}</span>
@@ -319,20 +332,20 @@ export function MapView({
           duration: 0.6,
         })
         if (!place && map.getZoom() < 6) map.setZoom(6)
-      } else if (events.length > 0 && showHeritage) {
+      } else if (events.length > 0 && mode !== 'events') {
         map.fitBounds(DACH_BOUNDS, { padding: [24, 24], animate: true })
       } else if (events.length > 0) {
         map.setView([51.05, 10.35], 6, { animate: true })
       } else if (place) {
         map.flyTo([place.lat, place.lng], 8, { duration: 0.6 })
       } else {
-        map.flyToBounds(showHeritage ? DACH_BOUNDS : GERMANY_BOUNDS, { padding: [30, 30], duration: 0.6 })
+        map.flyToBounds(mode !== 'events' ? DACH_BOUNDS : GERMANY_BOUNDS, { padding: [30, 30], duration: 0.6 })
       }
     }, 240)
 
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventSignature, place?.lat, place?.lng, radius, showHeritage])
+  }, [eventSignature, place?.lat, place?.lng, radius, mode])
 
   // Open a specific event when the user picks it from the list.
   useEffect(() => {
@@ -351,16 +364,19 @@ export function MapView({
   }, [focus])
 
   const heritagePending = showHeritage && heritageStatus !== 'ready'
-  const noResults = events.length === 0 && !heritagePending
-  const countLabel = showHeritage ? 'historische Orte' : events.length === 1 ? 'Fest' : 'Feste'
-  const statusLabel = heritagePending
+  const artisansPending = showArtisans && artisanStatus !== 'ready'
+  const noResults = events.length === 0 && !heritagePending && !artisansPending
+  const countLabel = showArtisans ? 'Handwerkseinträge' : showHeritage ? 'historische Orte' : events.length === 1 ? 'Fest' : 'Feste'
+  const statusLabel = artisansPending
+    ? artisanStatus === 'error' ? 'Handwerk konnte nicht geladen werden' : 'Handwerk wird geladen …'
+    : heritagePending
     ? heritageStatus === 'error' ? 'Historische Orte konnten nicht geladen werden' : 'Historische Orte werden geladen …'
     : `${events.length} ${countLabel} ${hasLocation
       ? `im Umkreis von ${radius} km`
-      : showHeritage ? 'in Deutschland, Österreich und der Schweiz' : 'in Deutschland'}`
+      : mode !== 'events' ? 'in Deutschland, Österreich und der Schweiz' : 'in Deutschland'}`
 
   return (
-    <section className="map-shell" aria-label={showHeritage ? 'Karte historischer Orte' : 'Karte der Feste'}>
+    <section className="map-shell" aria-label={showArtisans ? 'Karte für Handwerk' : showHeritage ? 'Karte historischer Orte' : 'Karte der Feste'}>
       <div ref={containerRef} className="map" />
 
       <div className="mobile-map-bar">
@@ -384,13 +400,17 @@ export function MapView({
       </div>
 
       <div className="map-mode" role="group" aria-label="Kartenansicht">
-        <button type="button" className="secondary-btn" aria-pressed={!showHeritage} onClick={() => onChangeMapMode(false)}>
+        <button type="button" className="secondary-btn" aria-pressed={mode === 'events'} onClick={() => onChangeMapMode('events')}>
           Veranstaltungen
         </button>
-        <button type="button" className="secondary-btn" aria-pressed={showHeritage} onClick={() => onChangeMapMode(true)}>
+        <button type="button" className="secondary-btn" aria-pressed={showHeritage} onClick={() => onChangeMapMode('heritage')}>
           <Castle size={15} aria-hidden="true" />
           Burgen &amp; Museen
         </button>
+        <button type="button" className="secondary-btn" aria-pressed={showArtisans} onClick={() => onChangeMapMode('artisans')}>
+          <Hammer size={15} aria-hidden="true" /> Handwerk
+        </button>
+        {artisanAction && <div className="map-mode__action">{artisanAction}</div>}
       </div>
 
       <div className="map-status" role="status" aria-live="polite">
@@ -398,7 +418,7 @@ export function MapView({
         <div>
           <strong>{statusLabel}</strong>
           <small>
-            {hasLocation ? `Luftlinie ab ${place?.label ?? 'deinem Standort'}` : showHeritage ? 'Burgen, Schlösser und Museen' : 'Alle aktiven Termine auf einen Blick'}
+            {hasLocation ? `Luftlinie ab ${place?.label ?? 'deinem Standort'}` : showArtisans ? 'Werkstätten und Online-Shops' : showHeritage ? 'Burgen, Schlösser und Museen' : 'Alle aktiven Termine auf einen Blick'}
           </small>
         </div>
       </div>
@@ -423,8 +443,8 @@ export function MapView({
 
       {!noResults && (
         <div className="map-legend" aria-label="Kategorien">
-          {(showHeritage ? Object.values(HERITAGE_KINDS) : CATEGORIES).map((category) => (
-            <span className="map-legend__item" key={category.id}>
+          {(showArtisans ? Object.values(ARTISAN_MODES) : showHeritage ? Object.values(HERITAGE_KINDS) : CATEGORIES).map((category) => (
+            <span className="map-legend__item" key={category.shortLabel}>
               <span className="map-legend__dot" style={{ background: category.color }} aria-hidden="true" />
               {category.shortLabel}
             </span>
@@ -438,9 +458,9 @@ export function MapView({
             <Castle size={26} />
           </span>
           <p className="eyebrow">Nichts in Sicht</p>
-          <h3>{showHeritage ? 'Keine historischen Orte für diese Auswahl' : 'Keine Feste für diese Auswahl'}</h3>
+          <h3>{showArtisans ? 'Keine Handwerkseinträge gefunden' : showHeritage ? 'Keine historischen Orte für diese Auswahl' : 'Keine Feste für diese Auswahl'}</h3>
           <p>
-            {showHeritage ? 'Vergrößere den Radius oder wähle weitere Arten von Orten.' : hasLocation
+            {showArtisans ? hasLocation ? 'Vergrößere den Radius oder wähle eine andere Stadt.' : 'Hier können Werkstätten und Online-Shops kostenlos eingetragen werden.' : showHeritage ? 'Vergrößere den Radius oder wähle weitere Arten von Orten.' : hasLocation
               ? 'Vergrößere den Radius, ändere den Zeitraum oder wähle weitere Kategorien — vielleicht wartet etwas weiter draußen.'
               : 'Ändere den Zeitraum oder wähle weitere Kategorien aus.'}
           </p>
