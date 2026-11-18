@@ -304,7 +304,49 @@ def parse_organizers(document, url, source):
     return events
 
 
+def parse_dill_announcement(document, url, source):
+    announcements = []
+    for paragraph in document.xpath('//p'):
+        text = clean(paragraph.text_content())
+        announcement = re.search(
+            r'(?:nächster termin|termin für (?P<year>20\d{2}) (?:feststeht|steht fest))\s*:\s*(?P<dates>.*)',
+            text, re.I,
+        )
+        if not announcement or unconfirmed(text):
+            continue
+        # The organizer uses a numeric range with the month only on the last day.
+        date_text = re.sub(
+            r'^(\d{1,2})\.\s*([-–—]|bis)\s*(\d{1,2})\.(\d{1,2})\.(20\d{2})',
+            r'\1.\4. \2 \3.\4.\5', announcement['dates'], flags=re.I,
+        )
+        dates = find_date_range(date_text)
+        if dates and (
+            not announcement['year'] or dates.start.year == int(announcement['year'])
+        ):
+            announcements.append(dates)
+
+    if not announcements:
+        return []
+    dates = max(announcements, key=lambda entry: entry.start)
+    place = source.location
+    address = place['address']
+    geo = place['geo']
+    return [EventDraft(
+        title=source.name, category=source.category,
+        start_date=dates.start, end_date=dates.end,
+        city=address['addressLocality'], zip=address['postalCode'],
+        venue=place['name'], lat=geo['latitude'], lng=geo['longitude'],
+        location_precision='venue',
+        source_name=source.name, source_url=url, website=source.url,
+        organizer='Freundeskreis Burg Dill/Hunsrück e.V. und IG Von Sponheim',
+        description='Historisches Ritterturnier mit mittelalterlichem Markt und Lager an der Burg Dill.',
+        confidence=0.95,
+    )]
+
+
 def parse_events(document, url, source):
+    if source.slug == 'ritterturnier-dill':
+        return parse_dill_announcement(document, url, source)
     events = parse_tables(document, url, source) + parse_organizers(document, url, source)
     if source.slug in ('dokomi', 'animagic'):
         # Read the explicitly published convention dates, never footer/news dates.

@@ -18,6 +18,8 @@ The user-supplied list is represented once per source in `backend/sources.json`.
 
 Additional active sources: Burg Satzvey, DoKomi and AnimagiC.
 
+[Historisches Ritterturnier zu Dill](https://historisches-treiben.dill-hunsrueck.de/) uses the official date announcement on the homepage. Visitor details for previous editions are excluded.
+
 Coverage limits: LARP-Kalender currently reads its 50 newest entries. Larp Radar reads the Germany country listing and its linked event pages. EventGilde reads the visible cards from its current and 2027 listings and their detail pages, capped at 24 pages. It does not claim to cover all database entries. Only listing seed pages expand to details; related events and login links are not crawled. No access controls are bypassed.
 
 Live Adventure redirects to Realms of Mythodea. The detailed event announcements are used instead of the overview because dates can disagree. DrachenFest uses the official date page in its ticket shop, which is linked by its LARP site.

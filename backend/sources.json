@@ -45,6 +45,24 @@
       "enabled": false
     },
     {
+      "slug": "ritterturnier-dill",
+      "name": "Historisches Ritterturnier zu Dill",
+      "url": "https://historisches-treiben.dill-hunsrueck.de/",
+      "category": "turnier",
+      "enabled": true,
+      "location": {
+        "name": "Burg Dill und Ortskern",
+        "address": {
+          "postalCode": "55487",
+          "addressLocality": "Dill"
+        },
+        "geo": {
+          "latitude": 49.916,
+          "longitude": 7.34532
+        }
+      }
+    },
+    {
       "slug": "kaltenberg",
       "name": "Schloss Kaltenberg",
       "url": "https://www.kaltenberg.de/ritterturnier",

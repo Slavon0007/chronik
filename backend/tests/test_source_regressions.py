@@ -8,7 +8,7 @@ from backend.dates import find_date_range
 from backend.geocoder import Geocoder, GeocodeResult
 from backend.config import Settings
 from backend.parsers import parse_events
-from backend.scraper import Source, fetch_pages
+from backend.scraper import Source, fetch_pages, load_sources
 from backend.models import Category, PageContent
 from lxml import html
 
@@ -20,6 +20,27 @@ class SourceRegressionTests(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertEqual(events[0].city, 'Bückeburg')
         self.assertEqual(events[0].end_date, date(2027, 8, 1))
+
+    def test_dill_uses_confirmed_announced_dates_and_skips_old_visitor_details(self):
+        source = next(source for source in load_sources() if source.slug == 'ritterturnier-dill')
+        doc = html.fromstring('''<main>
+            <article><p>Rückblick: Das Turnier war vom 20.06. - 22.06.2025.</p></article>
+            <article><h3>Ankündigung Ritterturnier 2026</h3>
+              <p>Der Termin für 2027 feststeht:<br>25. - 27.06.2027<br>Weitere Details folgen.</p>
+            </article>
+            <p>Nächster Termin: 25. bis 27. Juni</p>
+            <p>Eintritt 6 € und geöffnet 10:00–18:00 Uhr am 22.06.2025.</p>
+        </main>''')
+        events = parse_events(doc, source.url, source)
+        self.assertEqual(len(events), 1)
+        event = events[0]
+        self.assertEqual((event.start_date, event.end_date), (date(2027, 6, 25), date(2027, 6, 27)))
+        self.assertEqual((event.category, event.city), (Category.TURNIER, 'Dill'))
+        self.assertTrue(event.has_location)
+        self.assertEqual((event.price, event.opening_hours), ('', ''))
+
+        unconfirmed = html.fromstring('<p>Nächster Termin: 2. bis 4. Juni 2029 unter Vorbehalt.</p>')
+        self.assertEqual(parse_events(unconfirmed, source.url, source), [])
 
     def test_drachenfest_does_not_use_early_arrival_dates(self):
         doc = html.fromstring('<p>Das DrachenFest 2027 findet vom 27.07. – 01.08.2027 auf dem Larpgelände Waldeck statt. Frühanreise am 25.07.2027.</p>')
