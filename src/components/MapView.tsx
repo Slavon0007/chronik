@@ -125,6 +125,7 @@ export function MapView({
       wheelPxPerZoomLevel: 90,
     })
     map.attributionControl.setPrefix(false)
+    map.attributionControl.addAttribution('<a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a>')
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:

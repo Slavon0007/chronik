@@ -151,7 +151,8 @@ def merge_events(base: EventDraft, other: EventDraft) -> EventDraft:
     description = max((base.description, other.description), key=len)
     title = max((base.title, other.title), key=len)
     website = base.website or other.website
-    if website == base.source_url and other.website and other.website != other.source_url:
+    if (website == base.source_url and other.website and other.website != other.source_url
+            and other.confidence >= base.confidence):
         website = other.website
     organizer = base.organizer or other.organizer
     status_priority = {"cancelled": 4, "postponed": 3, "rescheduled": 2, "sold_out": 1}

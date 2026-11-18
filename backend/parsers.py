@@ -347,6 +347,14 @@ def parse_dill_announcement(document, url, source):
 def parse_events(document, url, source):
     if source.slug == 'ritterturnier-dill':
         return parse_dill_announcement(document, url, source)
+    if source.slug in ('marktkalendarium', 'mittelalter-netzwerk', 'historische-tage-scherneck'):
+        from .regional_sources import marktkalendarium, mittelalter_netzwerk, scherneck
+        adapters = {
+            'marktkalendarium': marktkalendarium,
+            'mittelalter-netzwerk': mittelalter_netzwerk,
+            'historische-tage-scherneck': scherneck,
+        }
+        return adapters[source.slug](document, url, source)
     events = parse_tables(document, url, source) + parse_organizers(document, url, source)
     if source.slug in ('dokomi', 'animagic'):
         # Read the explicitly published convention dates, never footer/news dates.
@@ -410,6 +418,10 @@ def parse_events(document, url, source):
                 lat, lng = float(geo.get('latitude')), float(geo.get('longitude'))
             except (ValueError, TypeError):
                 lat = lng = None
+            if source.slug == 'festa-medievale' and schema_term(item.get('eventStatus')) in {
+                'EventCancelled', 'EventPostponed',
+            }:
+                continue
             link = urljoin(url, item.get('url') or url)
             organizer = item.get('organizer') or {}
             if not isinstance(organizer, dict):
@@ -459,6 +471,9 @@ def parse_events(document, url, source):
             if value and (not getattr(event, field) or (field == 'event_status' and value == 'cancelled')
                           or field == 'opening_hours'):
                 setattr(event, field, value)
+    if source.slug == 'festa-medievale':
+        from .regional_sources import locate_festa
+        return locate_festa(structured)
     events.extend(structured)
     if source.slug == 'larpkalender':
         for row in document.xpath('//tr[starts-with(@class,"termindatum")]'):

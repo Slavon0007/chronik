@@ -6,6 +6,27 @@
   },
   "sources": [
     {
+      "slug": "festa-medievale",
+      "name": "Festa Medievale",
+      "url": "https://festa-medievale.de/",
+      "category": "markt",
+      "max_pages": 9,
+      "enabled": true,
+      "link_selector": "//a[contains(concat(' ',normalize-space(@class),' '),' entry ')][not(.//*[contains(@class,'entry-meta')][contains(.,'voraussichtlich') or contains(.,'wieder') or contains(.,'abgesagt') or contains(.,'verschoben')])]/@href"
+    },
+    {
+      "slug": "historische-tage-scherneck",
+      "name": "Historische Tage Scherneck",
+      "url": "https://historischer-markt-scherneck.de/programm.html",
+      "category": "markt",
+      "max_pages": 2,
+      "enabled": true,
+      "link_selector": "//a[false()]/@href",
+      "extra_urls": [
+        "https://www.kunst-kultur-garten.de/"
+      ]
+    },
+    {
       "slug": "mps-spectaculum",
       "name": "Mittelalterlich Phantasie Spectaculum",
       "url": "https://spectaculum.de/",
@@ -248,6 +269,23 @@
       "enabled": false,
       "max_pages": 1,
       "notes": "HTTP 401 for calendar and year page during validation 2026-11-03; no authentication bypass attempted."
+    },
+    {
+      "slug": "marktkalendarium",
+      "name": "Marktkalendarium",
+      "url": "https://marktkalendarium.de/maerkte2027.php",
+      "category": "markt",
+      "max_pages": 4,
+      "enabled": true,
+      "link_selector": "//a[starts-with(@href,'maerkte20') and substring-after(@href,'.')='php']/@href"
+    },
+    {
+      "slug": "mittelalter-netzwerk",
+      "name": "Mittelalter Netzwerk",
+      "url": "https://mittelalter-netzwerk.de/veranstaltungen",
+      "category": "reenactment",
+      "max_pages": 1,
+      "enabled": true
     }
   ]
 }

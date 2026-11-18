@@ -8,6 +8,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from dataclasses import replace
+from datetime import date
 from urllib.parse import urlparse, urldefrag
 
 from lxml import html as lxml_html
@@ -88,6 +89,10 @@ def fetch_page(source: Source, fetcher: Fetcher, fixture_dir: Path | None = None
     if source.link_selector:
         from urllib.parse import urljoin
         page.crawl_urls = list(dict.fromkeys(urljoin(source.url, href) for href in document.xpath(source.link_selector)))
+        if source.slug == 'marktkalendarium':
+            year = date.today().year
+            seasons = {f'/maerkte{number}.php' for number in (year, year + 1)}
+            page.crawl_urls = [href for href in page.crawl_urls if urlparse(href).path in seasons]
     return page
 
 

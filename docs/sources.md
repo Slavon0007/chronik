@@ -26,6 +26,15 @@ Live Adventure redirects to Realms of Mythodea. The detailed event announcements
 
 Unconfirmed/starred and cancelled organizer entries are excluded. Burg Satzvey dinner, workshop, seminar and reading entries are excluded. City/ZIP locations are approximate. Category, radius and date filters still apply to the published catalogue.
 
+## Regionale Veranstaltungskalender
+
+- [Festa Medievale](https://festa-medievale.de/): JSON-LD auf den verlinkten, angekündigten Marktseiten.
+- [Marktkalendarium](https://marktkalendarium.de/maerkte2027.php): jährliche Tabellen mit Datum und Ort. Externe Veranstaltungslinks (auch Facebook) werden übernommen, aber nicht abgerufen.
+- [Historische Tage Scherneck](https://historischer-markt-scherneck.de/programm.html): Veranstalterkalender und ergänzender Kalender von Im Team Event Media.
+- [Mittelalter Netzwerk](https://mittelalter-netzwerk.de/veranstaltungen): öffentliche, recherchierte Einträge mit konkretem Termin und deutschem Ort. Netzwerkinterne Treffen und vorläufige Termine werden ausgelassen.
+
+Für Orte ohne Veranstaltungskoordinaten nutzt der Import einen lokalen Auszug aus den [deutschen Postleitzahlen von GeoNames](https://download.geonames.org/export/zip/DE.zip), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Deutschsprachige Ortsnamen und PLZ wurden aus dem Original ausgewählt und die Koordinaten gerundet. Solche Kartenpunkte werden als ungefähre Positionen gekennzeichnet. Die Referenzkoordinaten einzelner Schlösser stammen aus Wikidata bzw. aus der Standortdokumentation der jeweiligen Burg.
+
 ## Historische Orte
 
 Der Modus **Burgen & Museen** nutzt `public/heritage.json`, einen separaten
