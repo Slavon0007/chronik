@@ -2168,6 +2168,27 @@ input[type='range']::-moz-range-thumb {
   white-space: nowrap;
 }
 
+.detail-share {
+  grid-column: 1 / -1;
+}
+
+.detail-share-link {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.detail-share-link input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-light);
+  color: var(--ink);
+  font: inherit;
+}
+
 .detail-source {
   margin-top: 12px;
   font-size: 8px;

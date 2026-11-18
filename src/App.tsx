@@ -11,6 +11,7 @@ import { CITIES } from './data/cities'
 import { haversineKm, nearestCity } from './lib/geo'
 import { eventOverlapsRange, getDateRange, isEventCurrent, parseDate } from './lib/dates'
 import { fetchPublishedEvents, isSupabaseConfigured } from './lib/api'
+import { linkedEventId, setLinkedEventId } from './lib/eventLink'
 import type { CategoryId, ChronikEvent, DateFilterId, HeritageKind, HeritageSite, Place } from './types'
 
 const ALL_HERITAGE_KINDS = Object.values(HERITAGE_KINDS).map(({ id }) => id)
@@ -36,7 +37,7 @@ export default function App() {
   const [dateFilter, setDateFilter] = useState<DateFilterId>('all')
   const [place, setPlace] = useState<Place | null>(null)
   const [radius, setRadius] = useState(150)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(linkedEventId)
   const [listOpen, setListOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [savedIds, setSavedIds] = useState<string[]>(readFavorites)
@@ -58,6 +59,12 @@ export default function App() {
       .then((liveEvents) => {
         if (cancelled) return
         setCatalog(liveEvents)
+        const requestedId = linkedEventId()
+        if (requestedId && !liveEvents.some((event) => event.id === requestedId && isEventCurrent(event))) {
+          setLinkedEventId(null)
+          setSelectedId(null)
+          setToast({ message: 'Diese Veranstaltung ist nicht mehr im Kalender.', id: Date.now() })
+        }
         setDataSource(isSupabaseConfigured ? 'supabase' : 'static')
       })
       .catch((error: unknown) => {
@@ -174,7 +181,7 @@ export default function App() {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
-      if (selectedId) setSelectedId(null)
+      if (selectedId) closeDetails()
       else if (listOpen) setListOpen(false)
       else if (filtersOpen) setFiltersOpen(false)
     }
@@ -205,7 +212,7 @@ export default function App() {
   function changeMapMode(next: boolean) {
     if (next === showHeritage) return
     setShowHeritage(next)
-    setSelectedId(null)
+    closeDetails()
     setFocus(null)
     setListOpen(false)
   }
@@ -280,7 +287,7 @@ export default function App() {
       setDateFilter('all')
     }
     setRadius(150)
-    setSelectedId(null)
+    closeDetails()
     setResetToken((token) => token + 1)
     notify('Alle Filter zurückgesetzt.')
   }
@@ -293,8 +300,14 @@ export default function App() {
     )
   }
 
+  function closeDetails() {
+    setSelectedId(null)
+    setLinkedEventId(null)
+  }
+
   function openEvent(id: string, focusMap = false) {
     setSelectedId(id)
+    setLinkedEventId(showHeritage ? null : id)
     setListOpen(false)
     if (focusMap) setFocus({ id, token: Date.now() })
   }
@@ -365,12 +378,12 @@ export default function App() {
           activeFilterCount={activeFilterCount}
           onOpenDetails={(id) => openEvent(id)}
           onOpenList={() => {
-            setSelectedId(null)
+            closeDetails()
             setListOpen(true)
           }}
           onOpenFilters={() => {
             setListOpen(false)
-            setSelectedId(null)
+            closeDetails()
             setFiltersOpen(true)
           }}
           onLocate={locate}
@@ -390,7 +403,7 @@ export default function App() {
       )}
 
       {selectedSite && (
-        <HeritageDetails site={selectedSite} onClose={() => setSelectedId(null)} />
+        <HeritageDetails site={selectedSite} onClose={closeDetails} />
       )}
 
       {listOpen && !showHeritage && (
@@ -410,8 +423,9 @@ export default function App() {
           event={selectedEvent}
           distance={selectedEvent.distance}
           saved={savedIds.includes(selectedEvent.id)}
-          onClose={() => setSelectedId(null)}
+          onClose={closeDetails}
           onToggleSave={() => toggleSave(selectedEvent.id)}
+          onLinkCopied={() => notify('Link kopiert.')}
         />
       )}
 

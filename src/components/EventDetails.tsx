@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   CalendarDays,
   Clock,
@@ -6,6 +6,7 @@ import {
   Heart,
   MapPin,
   Navigation,
+  Share2,
   Ticket,
   Users,
   X,
@@ -13,6 +14,7 @@ import {
 import { CATEGORY_MAP } from '../data/categories'
 import { formatDateRange, relativeDateLabel } from '../lib/dates'
 import { eventStatusLabel } from '../lib/eventStatus'
+import { shareableEventUrl } from '../lib/eventLink'
 import { formatDistance, routeUrl } from '../lib/geo'
 import type { ChronikEvent } from '../types'
 import { CategoryIcon } from './CategoryIcon'
@@ -24,10 +26,13 @@ type Props = {
   saved: boolean
   onClose: () => void
   onToggleSave: () => void
+  onLinkCopied: () => void
 }
 
-export function EventDetails({ event, distance, saved, onClose, onToggleSave }: Props) {
+export function EventDetails({ event, distance, saved, onClose, onToggleSave, onLinkCopied }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null)
+  const linkRef = useRef<HTMLInputElement>(null)
+  const [manualLink, setManualLink] = useState('')
   const category = CATEGORY_MAP[event.category]
   const status = eventStatusLabel(event.eventStatus)
   const routeUnavailable = event.eventStatus === 'cancelled' || event.eventStatus === 'postponed'
@@ -36,6 +41,25 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave }: 
   useEffect(() => {
     closeRef.current?.focus()
   }, [])
+
+  useEffect(() => {
+    if (!manualLink) return
+    linkRef.current?.focus()
+    linkRef.current?.select()
+  }, [manualLink])
+
+  async function copyEventLink() {
+    const url = shareableEventUrl(event.id)
+    try {
+      await navigator.clipboard.writeText(url)
+      setManualLink('')
+      onLinkCopied()
+    } catch {
+      setManualLink(url)
+      linkRef.current?.focus()
+      linkRef.current?.select()
+    }
+  }
 
   function openRoute() {
     window.open(routeUrl(event.lat, event.lng, event.title), '_blank', 'noopener,noreferrer')
@@ -153,7 +177,18 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave }: 
               <ExternalLink size={15} />
               Zur Veranstaltungsseite
             </a>
+            <button type="button" className="secondary-btn detail-share" onClick={copyEventLink}>
+              <Share2 size={15} aria-hidden="true" />
+              Veranstaltung teilen
+            </button>
           </div>
+
+          {manualLink && (
+            <label className="detail-share-link">
+              Link zum Kopieren
+              <input ref={linkRef} type="url" readOnly value={manualLink} />
+            </label>
+          )}
 
           <p className="detail-source">
             Automatisch aus öffentlichen Quellen zusammengestellt. Angaben ohne Gewähr.
