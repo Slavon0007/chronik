@@ -33,6 +33,7 @@ type Props = {
   dataSource: 'static' | 'supabase'
   resetToken: number
   onToggleCategory: (id: CategoryId) => void
+  onToggleAllCategories: () => void
   onDateFilter: (filter: DateFilterId) => void
   onPlace: (place: Place) => void
   onClearPlace: () => void
@@ -68,6 +69,7 @@ export function Sidebar({
   dataSource,
   resetToken,
   onToggleCategory,
+  onToggleAllCategories,
   onDateFilter,
   onPlace,
   onClearPlace,
@@ -136,16 +138,6 @@ export function Sidebar({
   }
 
   const allCategories = selectedCategories.length === CATEGORIES.length
-
-  function toggleAllCategories() {
-    if (allCategories) {
-      selectedCategories.forEach((id) => onToggleCategory(id))
-      return
-    }
-    CATEGORIES.filter((category) => !selectedCategories.includes(category.id)).forEach((category) =>
-      onToggleCategory(category.id),
-    )
-  }
 
   return (
     <aside
@@ -339,51 +331,52 @@ export function Sidebar({
               ))}
             </div>
           </section>
-        ) : <>
-        <section className="filter-block" aria-labelledby="date-label">
-          <div className="filter-head">
-            <h2 id="date-label">
-              <CalendarDays size={14} aria-hidden="true" /> Wann?
-            </h2>
-            <span className="filter-current">{dateFilterLabel(dateFilter)}</span>
-          </div>
-          <div className="date-grid" role="group" aria-label="Zeitraum wählen">
-            {DATE_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                className={`date-option ${dateFilter === option.id ? 'is-active' : ''}`}
-                aria-pressed={dateFilter === option.id}
-                onClick={() => onDateFilter(option.id)}
-              >
-                <span>{option.label}</span>
-                <small>{option.hint}</small>
-              </button>
-            ))}
-          </div>
-        </section>
+        ) : (
+          <section className="filter-block" aria-labelledby="date-label">
+            <div className="filter-head">
+              <h2 id="date-label">
+                <CalendarDays size={14} aria-hidden="true" /> Wann?
+              </h2>
+              <span className="filter-current">{dateFilterLabel(dateFilter)}</span>
+            </div>
+            <div className="date-grid" role="group" aria-label="Zeitraum wählen">
+              {DATE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`date-option ${dateFilter === option.id ? 'is-active' : ''}`}
+                  aria-pressed={dateFilter === option.id}
+                  onClick={() => onDateFilter(option.id)}
+                >
+                  <span>{option.label}</span>
+                  <small>{option.hint}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="filter-block" aria-labelledby="category-label">
           <div className="filter-head">
-            <h2 id="category-label">Was?</h2>
+            <h2 id="category-label">{showHeritage ? 'Veranstaltungen' : 'Was?'}</h2>
             <button
               type="button"
               className="text-btn"
-              onClick={toggleAllCategories}
+              onClick={onToggleAllCategories}
             >
-              {allCategories ? 'Alle abwählen' : 'Alle wählen'}
+              {showHeritage ? 'Alle anzeigen' : allCategories ? 'Alle abwählen' : 'Alle wählen'}
             </button>
           </div>
           <div className="category-grid">
             {CATEGORIES.map((category) => {
-              const active = selectedCategories.includes(category.id)
+              const active = !showHeritage && selectedCategories.includes(category.id)
               const count = categoryCounts[category.id] ?? 0
               return (
                 <button
                   key={category.id}
                   type="button"
-                  role="checkbox"
-                  aria-checked={active}
+                  role={showHeritage ? undefined : 'checkbox'}
+                  aria-checked={showHeritage ? undefined : active}
                   className={`category-tile ${active ? 'is-active' : ''}`}
                   style={
                     {
@@ -403,7 +396,6 @@ export function Sidebar({
             })}
           </div>
         </section>
-        </>}
       </div>
 
       <footer className="sidebar__footer">

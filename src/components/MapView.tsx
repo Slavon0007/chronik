@@ -17,7 +17,7 @@ type Props = {
   events: MapItem[]
   showHeritage: boolean
   heritageStatus: 'loading' | 'ready' | 'error'
-  onToggleHeritage: () => void
+  onChangeMapMode: (showHeritage: boolean) => void
   place: Place | null
   radius: number
   selectedId: string | null
@@ -79,7 +79,7 @@ export function MapView({
   events,
   showHeritage,
   heritageStatus,
-  onToggleHeritage,
+  onChangeMapMode,
   place,
   radius,
   selectedId,
@@ -382,15 +382,15 @@ export function MapView({
         </div>
       </div>
 
-      <button
-        type="button"
-        className="map-mode secondary-btn"
-        aria-pressed={showHeritage}
-        onClick={onToggleHeritage}
-      >
-        <Castle size={17} />
-        Burgen &amp; Museen
-      </button>
+      <div className="map-mode" role="group" aria-label="Kartenansicht">
+        <button type="button" className="secondary-btn" aria-pressed={!showHeritage} onClick={() => onChangeMapMode(false)}>
+          Veranstaltungen
+        </button>
+        <button type="button" className="secondary-btn" aria-pressed={showHeritage} onClick={() => onChangeMapMode(true)}>
+          <Castle size={15} aria-hidden="true" />
+          Burgen &amp; Museen
+        </button>
+      </div>
 
       <div className="map-status" role="status" aria-live="polite">
         <span className="map-status__pulse" aria-hidden="true" />

@@ -2688,15 +2688,27 @@ input[type='range']::-moz-range-thumb {
   }
 }
 
-.map-mode.secondary-btn {
+.map-mode {
   position: absolute;
   z-index: 500;
   top: 76px;
   left: 18px;
+  right: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  pointer-events: none;
+}
+
+.map-mode .secondary-btn {
+  gap: 5px;
+  padding-inline: 9px;
+  pointer-events: auto;
+  background: var(--paper);
   box-shadow: var(--shadow-sm);
 }
 
-.map-mode[aria-pressed='true'] {
+.map-mode .secondary-btn[aria-pressed='true'] {
   color: #fff;
   background: var(--moss);
   border-color: var(--moss);
@@ -2739,8 +2751,9 @@ input[type='range']::-moz-range-thumb {
 }
 
 @media (max-width: 900px) {
-  .map-mode.secondary-btn {
+  .map-mode {
     top: calc(115px + env(safe-area-inset-top));
     left: 12px;
+    right: 12px;
   }
 }

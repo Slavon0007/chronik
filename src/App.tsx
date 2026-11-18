@@ -202,7 +202,24 @@ export default function App() {
     setToast({ message, id: Date.now() })
   }
 
+  function changeMapMode(next: boolean) {
+    if (next === showHeritage) return
+    setShowHeritage(next)
+    setSelectedId(null)
+    setFocus(null)
+    setListOpen(false)
+  }
+
+  function selectEventCategories(categories: CategoryId[]) {
+    setSelectedCategories(categories)
+    changeMapMode(false)
+  }
+
   function toggleCategory(id: CategoryId) {
+    if (showHeritage) {
+      selectEventCategories([id])
+      return
+    }
     setSelectedCategories((current) =>
       current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
     )
@@ -312,6 +329,9 @@ export default function App() {
         dataSource={dataSource}
         resetToken={resetToken}
         onToggleCategory={toggleCategory}
+        onToggleAllCategories={() => selectEventCategories(
+          !showHeritage && selectedCategories.length === ALL_CATEGORIES.length ? [] : ALL_CATEGORIES,
+        )}
         onDateFilter={setDateFilter}
         onPlace={choosePlace}
         onClearPlace={clearPlace}
@@ -336,12 +356,7 @@ export default function App() {
           events={showHeritage ? sites : events}
           showHeritage={showHeritage}
           heritageStatus={heritageFailed ? 'error' : heritage ? 'ready' : 'loading'}
-          onToggleHeritage={() => {
-            setShowHeritage((current) => !current)
-            setSelectedId(null)
-            setFocus(null)
-            setListOpen(false)
-          }}
+          onChangeMapMode={changeMapMode}
           place={place}
           radius={radius}
           selectedId={selectedId}
