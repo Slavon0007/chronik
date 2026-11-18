@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import L from 'leaflet'
 import { Castle, Compass, Hammer, List, LocateFixed, SlidersHorizontal } from 'lucide-react'
-import { ARTISAN_MODES, ARTISAN_TRADES } from '../lib/artisans'
+import { artisanModeLabel, ARTISAN_MODES, ARTISAN_TRADES } from '../lib/artisans'
 import { HERITAGE_KINDS } from '../data/heritage'
 import { CATEGORIES, CATEGORY_MAP } from '../data/categories'
 import { eventStatusLabel } from '../lib/eventStatus'
@@ -224,7 +224,7 @@ export function MapView({
             : 'trade' in event ? `${ARTISAN_TRADES[event.trade]} · ${location}` : location
           popup.innerHTML = `
             <div class="map-popup__head">
-              <span class="map-popup__cat"><span class="map-popup__dot"></span>${escapeHtml(category.shortLabel)}</span>
+              <span class="map-popup__cat"><span class="map-popup__dot"></span>${escapeHtml('trade' in event ? artisanModeLabel(event) : category.shortLabel)}</span>
               ${event.distance !== null ? `<span class="map-popup__distance">${formatDistance(event.distance)}</span>` : ''}
             </div>
             <h3>${escapeHtml(event.title)}</h3>

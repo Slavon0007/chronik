@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Clock, ExternalLink, Hammer, MapPin, Navigation, X } from 'lucide-react'
-import { ARTISAN_MODES, ARTISAN_TRADES } from '../lib/artisans'
-import { formatDistance, normalizeText, routeUrl } from '../lib/geo'
+import { artisanModeLabel, ARTISAN_MODES, ARTISAN_TRADES } from '../lib/artisans'
+import { addressRouteUrl, formatDistance, normalizeText, routeUrl } from '../lib/geo'
 import type { MapArtisan } from './MapView'
 
 export function ArtisanList({ artisans, status, onClose, onOpen }: {
@@ -31,7 +31,7 @@ export function ArtisanList({ artisans, status, onClose, onOpen }: {
           {filtered.map(item => (
             <button type="button" className="heritage-row" key={item.id} onClick={() => onOpen(item.id)}>
               <Hammer size={18} aria-hidden="true" color={ARTISAN_MODES[item.kind].color} />
-              <span><strong>{item.title}</strong><small>{item.city} · {ARTISAN_MODES[item.kind].shortLabel}</small></span>
+              <span><strong>{item.title}</strong><small>{item.city} · {artisanModeLabel(item)}</small></span>
               {item.distance !== null && <small>{formatDistance(item.distance)}</small>}
             </button>
           ))}
@@ -60,11 +60,14 @@ export function ArtisanDetails({ profile, onClose }: { profile: MapArtisan; onCl
         </header>
         <div className="detail-body">
           <h2>{profile.title}</h2>
-          {online && <p className="artisan-online-label">Nur Online-Shop</p>}
+          {online && <p className="artisan-online-label">{profile.source ? 'Online-Angebot' : 'Nur Online-Shop'}</p>}
           <p className="detail-place"><MapPin size={15} aria-hidden="true" />
             {online ? `${profile.city} · Stadtmitte` : `${profile.address}, ${profile.city}`}
           </p>
-          {online && <p className="detail-description">Kein Laden vor Ort. Der Kartenpunkt zeigt die gewählte Stadt.</p>}
+          {online && <p className="detail-description">{profile.source
+            ? 'Ein Ladenbesuch ist nicht bestätigt. Der Kartenpunkt zeigt die Stadtmitte.'
+            : 'Kein Laden vor Ort. Der Kartenpunkt zeigt die gewählte Stadt.'}</p>}
+          {!online && profile.source && <p className="detail-description">Der Kartenpunkt zeigt die Stadtmitte. Die Route führt zur angegebenen Adresse.</p>}
           {profile.description && <p className="detail-description">{profile.description}</p>}
           {!online && <dl className="fact-list">
             <div className="fact"><dt><Clock size={15} aria-hidden="true" /> Öffnungszeiten</dt>
@@ -72,9 +75,12 @@ export function ArtisanDetails({ profile, onClose }: { profile: MapArtisan; onCl
           </dl>}
           <div className="detail-actions">
             <a className="primary-btn" href={profile.website}><ExternalLink size={15} /> {online ? 'Zum Online-Shop' : 'Zur Website'}</a>
-            {!online && <a className="secondary-btn" href={routeUrl(profile.lat, profile.lng, profile.title)}
+            {!online && <a className="secondary-btn" href={profile.source && profile.address
+              ? addressRouteUrl(`${profile.address}, ${profile.city}, ${profile.country}`)
+              : routeUrl(profile.lat, profile.lng, profile.title)}
               target="_blank" rel="noopener"><Navigation size={15} /> Route planen</a>}
           </div>
+          {profile.source && <p className="detail-description"><a href={profile.source}>Öffentliche Quelle</a></p>}
         </div>
       </aside>
     </>

@@ -42,7 +42,7 @@ self.addEventListener('fetch', (event) => {
   // Never cache map tiles, geocoding or third-party API traffic.
   if (requestUrl.origin !== self.location.origin || requestUrl.pathname.endsWith('/events.json')) return
 
-  if (requestUrl.href === url('heritage.json')) {
+  if (requestUrl.href === url('heritage.json') || requestUrl.href === url('artisans-imported.json')) {
     event.respondWith(
       fetch(request)
         .then(async (response) => {

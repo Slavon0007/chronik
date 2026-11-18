@@ -7,7 +7,7 @@ import { EventDetails } from './components/EventDetails'
 import { HeritageDetails, HeritageList } from './components/HeritagePanels'
 import { ArtisanDetails, ArtisanList } from './components/ArtisanPanels'
 import { ArtisanForm } from './components/ArtisanForm'
-import { loadArtisans } from './lib/artisans'
+import { loadArtisans, mergeArtisans } from './lib/artisans'
 import { CATEGORIES, ALL_CATEGORIES } from './data/categories'
 import { HERITAGE_KINDS } from './data/heritage'
 import { CITIES } from './data/cities'
@@ -108,7 +108,7 @@ export default function App() {
     setArtisanStatus('loading')
     loadArtisans(controller.signal).then((profiles) => {
       if (controller.signal.aborted) return
-      setArtisans(current => [...new Map([...profiles, ...current].map(profile => [profile.id, profile])).values()])
+      setArtisans(current => mergeArtisans([...current, ...profiles]))
       setArtisanStatus('ready')
     }).catch(() => {
       if (!controller.signal.aborted) setArtisanStatus('error')
@@ -344,7 +344,7 @@ export default function App() {
   }
 
   function addArtisan(profile: Artisan) {
-    setArtisans(current => [...current.filter(existing => existing.id !== profile.id), profile])
+    setArtisans(current => mergeArtisans([...current, profile]))
     setArtisanStatus('ready')
     // Centre the map on the new listing even if a radius filter was active.
     setPlace(null)

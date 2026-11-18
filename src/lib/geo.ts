@@ -94,10 +94,19 @@ export function appleMapsRoute(lat: number, lng: number, label: string): string 
   return `https://maps.apple.com/?daddr=${lat},${lng}&q=${encodeURIComponent(label)}&dirflg=d`
 }
 
-export function routeUrl(lat: number, lng: number, label: string): string {
-  const isApple =
-    typeof navigator !== 'undefined' &&
+function usesAppleMaps(): boolean {
+  return typeof navigator !== 'undefined' &&
     (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
-  return isApple ? appleMapsRoute(lat, lng, label) : googleMapsRoute(lat, lng, label)
+}
+
+export function routeUrl(lat: number, lng: number, label: string): string {
+  return usesAppleMaps() ? appleMapsRoute(lat, lng, label) : googleMapsRoute(lat, lng, label)
+}
+
+export function addressRouteUrl(address: string): string {
+  const destination = encodeURIComponent(address)
+  return usesAppleMaps()
+    ? `https://maps.apple.com/?daddr=${destination}&dirflg=d`
+    : `https://www.google.com/maps/dir/?api=1&destination=${destination}`
 }

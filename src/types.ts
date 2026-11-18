@@ -76,6 +76,7 @@ export type Artisan = {
   hours?: string
   website: string
   description: string
+  source?: string
 }
 
 export type ArtisanCity = [id: string, name: string, region: string, country: string, postcodes: string[], lat: number, lng: number]
