@@ -15,7 +15,7 @@ import { CATEGORY_MAP } from '../data/categories'
 import { formatDateRange, relativeDateLabel } from '../lib/dates'
 import { eventStatusLabel } from '../lib/eventStatus'
 import { shareableEventUrl } from '../lib/eventLink'
-import { formatDistance, routeUrl } from '../lib/geo'
+import { addressRouteUrl, formatDistance, routeUrl } from '../lib/geo'
 import type { ChronikEvent } from '../types'
 import { CategoryIcon } from './CategoryIcon'
 import { EventArt } from './EventArt'
@@ -62,7 +62,10 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave, on
   }
 
   function openRoute() {
-    window.open(routeUrl(event.lat, event.lng, event.title), '_blank', 'noopener,noreferrer')
+    const destination = event.locationPrecision === 'street'
+      ? addressRouteUrl(event.address)
+      : routeUrl(event.lat, event.lng, event.title)
+    window.open(destination, '_blank', 'noopener,noreferrer')
   }
 
   return (

@@ -19,6 +19,7 @@ from pathlib import Path
 
 from .config import BACKEND_ROOT, DEFAULT_OUTPUT, Settings
 from .dedupe import deduplicate
+from .corrections import apply_event_corrections
 from .dates import parse_iso_date
 from .extractor import extract_events
 from .geocoder import geocode_events
@@ -144,6 +145,8 @@ def main(argv: list[str] | None = None) -> int:
 
     drafts = [event for event in drafts if event.is_valid]
     drafts = [event for event in drafts if event.end_date >= today]
+
+    apply_event_corrections(drafts)
 
     events, geocoded = geocode_events(
         drafts,
