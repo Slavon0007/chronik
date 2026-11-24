@@ -19,6 +19,7 @@ import { addressRouteUrl, formatDistance, routeUrl } from '../lib/geo'
 import type { ChronikEvent } from '../types'
 import { CategoryIcon } from './CategoryIcon'
 import { EventArt } from './EventArt'
+import { EventCalendar } from './EventCalendar'
 
 type Props = {
   event: ChronikEvent
@@ -185,6 +186,8 @@ export function EventDetails({ event, distance, saved, onClose, onToggleSave, on
               Veranstaltung teilen
             </button>
           </div>
+
+          <EventCalendar event={event} />
 
           {manualLink && (
             <label className="detail-share-link">

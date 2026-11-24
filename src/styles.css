@@ -2833,3 +2833,36 @@ input[type='range']::-moz-range-thumb {
     width: 13px;
   }
 }
+
+.event-calendar {
+  margin-top: 8px;
+}
+
+.event-calendar > summary {
+  width: 100%;
+  list-style: none;
+  cursor: pointer;
+}
+
+.event-calendar > summary::-webkit-details-marker {
+  display: none;
+}
+
+.event-calendar__options {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.event-calendar__options .secondary-btn {
+  white-space: normal;
+  text-align: center;
+  min-height: 40px;
+}
+
+.event-calendar__options p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
